@@ -1,0 +1,38 @@
+# ===========================================
+# 生产上线配置 (java -jar xxx.jar --spring.profiles.active=prod)
+# 所有敏感信息从环境变量注入，不在文件中硬编码
+# ===========================================
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+  cache:
+    type: redis
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    com.blog: WARN
+    org.springframework: WARN
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}
+  upload:
+    path: ${UPLOAD_PATH:/data/uploads}
+  ai:
+    api-key: ${AI_API_KEY}
+    model: ${AI_MODEL:deepseek-chat}

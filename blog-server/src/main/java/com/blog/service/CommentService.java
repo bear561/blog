@@ -10,7 +10,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,11 +21,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class CommentService {
 
     private final CommentMapper commentMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired(required = false)
+    private RedisTemplate<String, Object> redisTemplate;
+
+    public CommentService(CommentMapper commentMapper) {
+        this.commentMapper = commentMapper;
+    }
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -42,15 +47,18 @@ public class CommentService {
     }
 
     public void submitComment(CommentDTO dto, HttpServletRequest request) {
-        // 限流检查
         String ip = getClientIp(request);
-        String rateKey = "rate:comment:" + ip;
-        Long count = redisTemplate.opsForValue().increment(rateKey);
-        if (count != null && count == 1) {
-            redisTemplate.expire(rateKey, 1, TimeUnit.MINUTES);
-        }
-        if (count != null && count > 5) {
-            throw new BusinessException(429, "评论太频繁，请稍后再试");
+
+        // 限流检查（Redis 不可用时跳过）
+        if (redisTemplate != null) {
+            String rateKey = "rate:comment:" + ip;
+            Long count = redisTemplate.opsForValue().increment(rateKey);
+            if (count != null && count == 1) {
+                redisTemplate.expire(rateKey, 1, TimeUnit.MINUTES);
+            }
+            if (count != null && count > 5) {
+                throw new BusinessException(429, "评论太频繁，请稍后再试");
+            }
         }
 
         Comment comment = new Comment();

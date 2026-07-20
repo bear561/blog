@@ -18,6 +18,7 @@ public class CommentVO {
     private String website;
     private String content;
     private Integer isReviewed;
+    private String createdAtFmt;
     private String formattedDate;
     private List<CommentVO> replies;
 

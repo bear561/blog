@@ -45,10 +45,10 @@ public class SecurityConfig {
             )
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, authException) -> {
-                    writeError(response, 401, "未登录或登录已过期");
+                    try { writeError(response, 401, "未登录或登录已过期"); } catch (Exception ignored) {}
                 })
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    writeError(response, 403, "无权限");
+                    try { writeError(response, 403, "无权限"); } catch (Exception ignored) {}
                 })
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

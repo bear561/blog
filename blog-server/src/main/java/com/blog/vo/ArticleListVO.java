@@ -15,6 +15,7 @@ public class ArticleListVO {
     private String coverImage;
     private String categoryName;
     private List<TagVO> tags;
+    private Integer isPublished;
     private Integer isTop;
     private Long viewCount;
 

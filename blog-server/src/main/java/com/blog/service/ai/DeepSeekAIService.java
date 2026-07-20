@@ -5,7 +5,6 @@ import com.blog.dto.AIChatRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -18,7 +17,6 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "app.ai.provider", havingValue = "deepseek")
 public class DeepSeekAIService implements AIService {
 
     private final AppConfig appConfig;
