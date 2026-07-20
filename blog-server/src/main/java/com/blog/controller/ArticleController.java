@@ -1,0 +1,61 @@
+package com.blog.controller;
+
+import com.blog.common.Result;
+import com.blog.dto.ArticleQueryDTO;
+import com.blog.service.ArticleService;
+import com.blog.vo.ArticleListVO;
+import com.blog.vo.ArticleVO;
+import com.blog.vo.ArchiveVO;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/articles")
+@RequiredArgsConstructor
+public class ArticleController {
+
+    private final ArticleService articleService;
+
+    @GetMapping
+    public Result<?> getArticles(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) Long tagId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+
+        ArticleQueryDTO query = new ArticleQueryDTO();
+        query.setPage(page);
+        query.setSize(size);
+        query.setCategoryId(categoryId);
+        query.setTagId(tagId);
+        query.setKeyword(keyword);
+        query.setYear(year);
+        query.setMonth(month);
+
+        // 有关键词时走搜索
+        if (keyword != null && !keyword.isEmpty()) {
+            return Result.success(articleService.search(keyword, page, size));
+        }
+        return Result.success(articleService.getArticleList(query));
+    }
+
+    @GetMapping("/{id}")
+    public Result<ArticleVO> getArticle(@PathVariable Long id) {
+        return Result.success(articleService.getArticleDetail(id));
+    }
+
+    @GetMapping("/archive")
+    public Result<List<ArchiveVO>> getArchive() {
+        return Result.success(articleService.getArchive());
+    }
+
+    @GetMapping("/hot")
+    public Result<List<ArticleListVO>> getHot(@RequestParam(defaultValue = "5") int limit) {
+        return Result.success(articleService.getHotArticles(limit));
+    }
+}
