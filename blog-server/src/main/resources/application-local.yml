@@ -33,5 +33,7 @@ mybatis-plus:
 app:
   jwt:
     secret: local-dev-secret-not-for-production
+  upload:
+    path: d:/blog/uploads
   ai:
     api-key: ${AI_API_KEY:}

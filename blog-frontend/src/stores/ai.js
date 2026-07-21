@@ -1,24 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { chat as chatApi } from '@/api/ai'
 
 export const useAiStore = defineStore('ai', () => {
   const messages = ref([])
-  const sessionId = ref(generateSessionId())
+  const sessionId = ref('session_' + Date.now())
   const isOpen = ref(false)
   const isStreaming = ref(false)
 
-  function generateSessionId() {
-    return 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9)
-  }
-
   function addMessage(role, content) {
-    messages.value.push({
-      id: Date.now(),
-      role,
-      content,
-      timestamp: new Date().toISOString()
-    })
+    messages.value.push({ id: Date.now(), role, content, timestamp: new Date().toISOString() })
   }
 
   async function sendMessage(content) {
@@ -27,55 +17,40 @@ export const useAiStore = defineStore('ai', () => {
     addMessage('user', content)
     isStreaming.value = true
 
-    const assistantMessage = {
-      id: Date.now() + 1,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date().toISOString()
-    }
-    messages.value.push(assistantMessage)
+    const assistantMsg = { id: Date.now() + 1, role: 'assistant', content: '', timestamp: new Date().toISOString() }
+    messages.value.push(assistantMsg)
+    const lastIdx = messages.value.length - 1
 
     try {
-      const response = await chatApi({
-        messages: messages.value.filter(m => m.content).map(m => ({
-          role: m.role,
-          content: m.content
-        })),
-        sessionId: sessionId.value
+      const history = messages.value
+        .filter(m => m.content && m.role !== 'assistant')
+        .slice(0, -1)
+        .map(m => ({ role: m.role, content: m.content }))
+
+      const resp = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: content, sessionId: sessionId.value, history }),
+        signal: AbortSignal.timeout(60000)
       })
 
-      if (!response.ok) {
-        throw new Error('Chat request failed')
-      }
+      if (!resp.ok) throw new Error('HTTP ' + resp.status)
 
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6).trim()
-            if (data === '[DONE]') continue
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.content) {
-                assistantMessage.content += parsed.content
-              }
-            } catch {
-              assistantMessage.content += data
-            }
+      const text = await resp.text()
+      const lines = text.split('\n')
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const val = line.slice(5).trim()
+          if (val && val !== '[DONE]' && !val.startsWith('{')) {
+            messages.value[lastIdx].content += val
           }
         }
       }
     } catch (e) {
-      console.error('AI chat error:', e)
-      assistantMessage.content = 'Sorry, something went wrong. Please try again.'
+      console.error('AI error:', e)
+      if (!messages.value[lastIdx].content) {
+        messages.value[lastIdx].content = '抱歉，AI 服务暂时不可用。'
+      }
     } finally {
       isStreaming.value = false
     }
@@ -83,15 +58,8 @@ export const useAiStore = defineStore('ai', () => {
 
   function clearMessages() {
     messages.value = []
-    sessionId.value = generateSessionId()
+    sessionId.value = 'session_' + Date.now()
   }
 
-  return {
-    messages,
-    sessionId,
-    isOpen,
-    isStreaming,
-    sendMessage,
-    clearMessages
-  }
+  return { messages, sessionId, isOpen, isStreaming, sendMessage, clearMessages }
 })

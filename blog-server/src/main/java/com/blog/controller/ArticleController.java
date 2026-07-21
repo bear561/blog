@@ -58,4 +58,11 @@ public class ArticleController {
     public Result<List<ArticleListVO>> getHot(@RequestParam(defaultValue = "5") int limit) {
         return Result.success(articleService.getHotArticles(limit));
     }
+
+    @GetMapping("/search")
+    public Result<?> search(@RequestParam String keyword,
+                            @RequestParam(defaultValue = "1") int page,
+                            @RequestParam(defaultValue = "10") int size) {
+        return Result.success(articleService.search(keyword, page, size));
+    }
 }

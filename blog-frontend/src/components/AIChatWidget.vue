@@ -158,7 +158,7 @@ watch(
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), #764ba2);
+  background: linear-gradient(135deg, var(--primary), #764ba2);
   color: #fff;
   display: flex;
   align-items: center;
@@ -177,7 +177,7 @@ watch(
 .chat-panel {
   width: 380px;
   height: 560px;
-  background: var(--bg-white);
+  background: var(--bg-card);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   display: flex;
@@ -190,7 +190,7 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding: 14px 16px;
-  background: linear-gradient(135deg, var(--primary-color), #764ba2);
+  background: linear-gradient(135deg, var(--primary), #764ba2);
   color: #fff;
   flex-shrink: 0;
 }
@@ -228,7 +228,7 @@ watch(
 }
 
 .welcome-icon {
-  color: var(--primary-color);
+  color: var(--primary);
   margin-bottom: 16px;
 }
 
@@ -266,12 +266,13 @@ watch(
 }
 
 .chat-message.assistant .message-content {
-  background: var(--bg-color);
+  background: var(--bg);
+  color: var(--text);
   border-radius: 4px 12px 12px 12px;
 }
 
 .chat-message.user .message-content {
-  background: linear-gradient(135deg, var(--primary-color), #764ba2);
+  background: linear-gradient(135deg, var(--primary), #764ba2);
   color: #fff;
   border-radius: 12px 4px 12px 12px;
 }
@@ -286,7 +287,7 @@ watch(
 
 .message-avatar {
   flex-shrink: 0;
-  color: var(--primary-color);
+  color: var(--primary);
 }
 
 /* Typing indicator */
@@ -300,7 +301,7 @@ watch(
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--text-placeholder);
+  background: var(--text-muted);
   animation: typing 1.4s infinite ease-in-out;
 }
 
@@ -326,7 +327,7 @@ watch(
 /* Input area */
 .chat-input {
   padding: 12px 16px;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--border);
   display: flex;
   gap: 8px;
   align-items: flex-end;
@@ -363,13 +364,5 @@ watch(
 .slide-up-leave-to {
   opacity: 0;
   transform: translateY(20px);
-}
-
-@media (max-width: 768px) {
-  .chat-panel {
-    width: calc(100vw - 32px);
-    height: 480px;
-    right: 0;
-  }
 }
 </style>

@@ -1,189 +1,70 @@
 <template>
-  <el-card class="article-card" :body-style="{ padding: '0' }" shadow="hover">
+  <article class="article-card" @click="$router.push(`/article/${article.id}`)">
     <div class="card-cover" v-if="article.coverImage">
-      <router-link :to="`/article/${article.id}`">
-        <el-image
-          :src="article.coverImage"
-          fit="cover"
-          class="cover-image"
-          lazy
-        >
-          <template #error>
-            <div class="image-placeholder">
-              <el-icon :size="48"><PictureFilled /></el-icon>
-            </div>
-          </template>
-        </el-image>
-      </router-link>
+      <img :src="article.coverImage" alt="" loading="lazy" />
     </div>
     <div class="card-body">
       <div class="card-meta">
-        <span class="meta-category" v-if="article.category">
-          <router-link :to="`/category/${article.category.slug || article.category}`">
-            <el-tag size="small" type="primary" effect="plain">
-              {{ article.category.name || article.category }}
-            </el-tag>
-          </router-link>
+        <span class="meta-category" v-if="article.categoryName">
+          {{ article.categoryName }}
         </span>
-        <span class="meta-date">
-          <el-icon :size="14"><Clock /></el-icon>
-          {{ formatDate(article.createdAt || article.createTime, 'YYYY-MM-DD') }}
-        </span>
+        <span class="meta-date">{{ formatDate(article.createdAt, 'yyyy-MM-dd') }}</span>
       </div>
-      <h2 class="card-title">
-        <router-link :to="`/article/${article.id}`">
-          {{ article.title }}
-        </router-link>
-      </h2>
-      <p class="card-summary">{{ article.summary }}</p>
+      <h2 class="card-title">{{ article.title }}</h2>
+      <p class="card-summary" v-if="article.summary">{{ article.summary }}</p>
       <div class="card-footer">
-        <div class="footer-tags" v-if="article.tags && article.tags.length">
-          <router-link
-            v-for="tag in article.tags"
-            :key="tag.id || tag"
-            :to="`/tag/${tag.slug || tag}`"
-          >
-            <el-tag size="small" class="tag-item">
-              {{ tag.name || tag }}
-            </el-tag>
-          </router-link>
+        <div class="tags" v-if="article.tags?.length">
+          <span class="tag" v-for="tag in article.tags.slice(0,3)" :key="tag.id">{{ tag.name }}</span>
         </div>
-        <div class="footer-stats">
-          <span class="stat-item">
-            <el-icon :size="14"><View /></el-icon>
-            {{ article.viewCount || article.views || 0 }}
-          </span>
-          <span class="stat-item">
-            <el-icon :size="14"><ChatLineSquare /></el-icon>
-            {{ article.commentCount || article.comments || 0 }}
-          </span>
-        </div>
+        <span class="views">{{ article.viewCount || 0 }} views</span>
       </div>
     </div>
-  </el-card>
+  </article>
 </template>
 
 <script setup>
-import { Clock, View, ChatLineSquare, PictureFilled } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/date'
-
-defineProps({
-  article: {
-    type: Object,
-    required: true,
-    default: () => ({})
-  }
-})
+defineProps({ article: { type: Object, required: true } })
 </script>
 
 <style scoped>
 .article-card {
-  border-radius: var(--radius-base);
-  overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  background: var(--bg-card); border-radius: var(--radius);
+  border: 1px solid var(--border); overflow: hidden;
+  cursor: pointer; transition: all .25s;
 }
-
 .article-card:hover {
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg); transform: translateY(-2px);
+  border-color: var(--primary-light);
 }
 
-.card-cover {
-  height: 200px;
-  overflow: hidden;
-}
+.card-cover { height: 200px; overflow: hidden; }
+.card-cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+.article-card:hover .card-cover img { transform: scale(1.04); }
 
-.cover-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s;
-}
+.card-body { padding: 24px; }
 
-.article-card:hover .cover-image {
-  transform: scale(1.05);
+.card-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.meta-category {
+  font-size: 12px; font-weight: 600; color: var(--primary);
+  background: rgba(59,130,246,.08); padding: 2px 10px; border-radius: 100px;
 }
-
-.image-placeholder {
-  width: 100%;
-  height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-}
-
-.card-body {
-  padding: 20px;
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.meta-date {
-  font-size: 12px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+.meta-date { font-size: 13px; color: var(--text-muted); }
 
 .card-title {
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.4;
-  margin-bottom: 10px;
+  font-size: 22px; font-weight: 700; line-height: 1.35; margin-bottom: 10px;
+  color: var(--text);
 }
-
-.card-title a {
-  color: var(--text-primary);
-}
-
-.card-title a:hover {
-  color: var(--primary-color);
-}
+.article-card:hover .card-title { color: var(--primary); }
 
 .card-summary {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.7;
+  font-size: 14px; color: var(--text-secondary); line-height: 1.7;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   margin-bottom: 16px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
-.card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.footer-tags {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.tag-item {
-  cursor: pointer;
-}
-
-.footer-stats {
-  display: flex;
-  gap: 14px;
-}
-
-.stat-item {
-  font-size: 12px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
+.card-footer { display: flex; justify-content: space-between; align-items: center; }
+.tags { display: flex; gap: 6px; }
+.tag { font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 2px 8px; border-radius: 4px; }
+.views { font-size: 12px; color: var(--text-muted); }
 </style>

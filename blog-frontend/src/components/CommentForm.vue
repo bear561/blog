@@ -148,8 +148,8 @@ async function handleSubmit() {
 .comment-form {
   margin-top: 40px;
   padding: 24px;
-  background: var(--bg-white);
-  border-radius: var(--radius-base);
+  background: var(--bg-card);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-light);
 }
 
@@ -157,7 +157,7 @@ async function handleSubmit() {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 20px;
-  color: var(--text-primary);
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 12px;

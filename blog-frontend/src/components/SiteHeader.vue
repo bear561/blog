@@ -1,32 +1,19 @@
 <template>
-  <el-header class="site-header" height="64px">
-    <div class="header-container">
-      <div class="header-left">
-        <router-link to="/" class="site-logo">
-          <h1 class="site-name">{{ appStore.siteName }}</h1>
-        </router-link>
-        <nav class="nav-links">
-          <router-link to="/" class="nav-item" active-class="nav-active">Home</router-link>
-          <router-link to="/archive" class="nav-item" active-class="nav-active">Archive</router-link>
-          <router-link to="/friend-links" class="nav-item" active-class="nav-active">Links</router-link>
-          <router-link to="/about" class="nav-item" active-class="nav-active">About</router-link>
-        </nav>
-      </div>
-      <div class="header-right">
-        <div class="search-box">
-          <el-input
-            v-model="keyword"
-            placeholder="Search articles..."
-            :prefix-icon="Search"
-            size="default"
-            class="search-input"
-            @keyup.enter="handleSearch"
-            clearable
-          />
-        </div>
+  <header class="site-header">
+    <div class="header-inner">
+      <router-link to="/" class="logo">{{ appStore.siteName }}</router-link>
+      <nav class="nav">
+        <router-link to="/" class="nav-link" exact-active-class="active">Home</router-link>
+        <router-link to="/archive" class="nav-link" active-class="active">Archive</router-link>
+        <router-link to="/friend-links" class="nav-link" active-class="active">Links</router-link>
+        <router-link to="/about" class="nav-link" active-class="active">About</router-link>
+      </nav>
+      <div class="header-actions">
+        <el-input v-model="keyword" size="small" placeholder="Search..." :prefix-icon="Search"
+          @keyup.enter="handleSearch" clearable class="search-input" />
       </div>
     </div>
-  </el-header>
+  </header>
 </template>
 
 <script setup>
@@ -40,90 +27,47 @@ const router = useRouter()
 const keyword = ref('')
 
 function handleSearch() {
-  const trimmed = keyword.value.trim()
-  if (trimmed) {
-    router.push({ name: 'Search', query: { keyword: trimmed } })
-  }
+  const q = keyword.value.trim()
+  if (q) router.push({ name: 'Search', query: { keyword: q } })
 }
 </script>
 
 <style scoped>
 .site-header {
-  background: var(--bg-white);
-  border-bottom: 1px solid var(--border-light);
-  box-shadow: var(--shadow-light);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(15, 23, 42, .92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  height: var(--header-height);
 }
 
-.header-container {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
+.header-inner {
+  max-width: var(--max-width); margin: 0 auto;
+  height: 100%; display: flex; align-items: center;
+  padding: 0 24px; gap: 32px;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
-
-.site-logo {
-  text-decoration: none;
-}
-
-.site-name {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
+.logo {
+  font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -.5px;
   white-space: nowrap;
 }
+.logo:hover { color: var(--primary-light); }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.nav { display: flex; gap: 4px; }
+.nav-link {
+  padding: 6px 16px; border-radius: 8px; font-size: 14px;
+  color: rgba(255,255,255,.7); transition: all .2s;
 }
+.nav-link:hover, .nav-link.active { color: #fff; background: rgba(255,255,255,.1); }
 
-.nav-item {
-  color: var(--text-regular);
-  padding: 8px 16px;
-  border-radius: var(--radius-small);
-  font-size: 14px;
-  transition: all 0.2s;
+.header-actions { margin-left: auto; }
+.search-input { width: 200px; }
+.search-input :deep(.el-input__wrapper) {
+  background: rgba(255,255,255,.1); border: none; box-shadow: none;
+  border-radius: 8px;
 }
-
-.nav-item:hover {
-  color: var(--primary-color);
-  background-color: rgba(64, 158, 255, 0.06);
-}
-
-.nav-active {
-  color: var(--primary-color);
-  font-weight: 500;
-}
-
-.search-input {
-  width: 220px;
-}
-
-@media (max-width: 768px) {
-  .nav-links {
-    display: none;
-  }
-
-  .search-input {
-    width: 160px;
-  }
-
-  .header-left {
-    gap: 12px;
-  }
-}
+.search-input :deep(.el-input__inner) { color: #fff; }
+.search-input :deep(.el-input__inner::placeholder) { color: rgba(255,255,255,.4); }
+.search-input :deep(.el-input__prefix) { color: rgba(255,255,255,.4); }
 </style>

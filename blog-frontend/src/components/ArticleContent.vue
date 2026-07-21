@@ -56,7 +56,7 @@ onMounted(() => {
 .article-content {
   font-size: 16px;
   line-height: 1.8;
-  color: var(--text-primary);
+  color: var(--text);
   word-wrap: break-word;
 }
 
@@ -73,7 +73,7 @@ onMounted(() => {
 }
 
 .article-content :deep(h1) { font-size: 28px; }
-.article-content :deep(h2) { font-size: 24px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light); }
+.article-content :deep(h2) { font-size: 24px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .article-content :deep(h3) { font-size: 20px; }
 .article-content :deep(h4) { font-size: 18px; }
 
@@ -83,18 +83,18 @@ onMounted(() => {
 
 .article-content :deep(img) {
   max-width: 100%;
-  border-radius: var(--radius-base);
+  border-radius: var(--radius);
   margin: 16px 0;
-  box-shadow: var(--shadow-base);
+  box-shadow: var(--shadow);
 }
 
 .article-content :deep(blockquote) {
   margin: 16px 0;
   padding: 12px 20px;
-  border-left: 4px solid var(--primary-color);
+  border-left: 4px solid var(--primary);
   background: rgba(64, 158, 255, 0.05);
-  color: var(--text-regular);
-  border-radius: 0 var(--radius-small) var(--radius-small) 0;
+  color: var(--text-secondary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .article-content :deep(blockquote p) {
@@ -103,9 +103,9 @@ onMounted(() => {
 
 .article-content :deep(pre) {
   margin: 16px 0;
-  border-radius: var(--radius-base);
+  border-radius: var(--radius);
   overflow-x: auto;
-  box-shadow: var(--shadow-base);
+  box-shadow: var(--shadow);
 }
 
 .article-content :deep(pre code) {
@@ -148,28 +148,28 @@ onMounted(() => {
 .article-content :deep(th),
 .article-content :deep(td) {
   padding: 10px 16px;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border);
   text-align: left;
 }
 
 .article-content :deep(th) {
-  background: var(--bg-color);
+  background: var(--bg);
   font-weight: 600;
 }
 
 .article-content :deep(hr) {
   margin: 24px 0;
   border: none;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--border);
 }
 
 .article-content :deep(a) {
-  color: var(--primary-color);
+  color: var(--primary);
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s;
 }
 
 .article-content :deep(a:hover) {
-  border-bottom-color: var(--primary-color);
+  border-bottom-color: var(--primary);
 }
 </style>

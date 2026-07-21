@@ -77,7 +77,7 @@ defineEmits(['reply'])
   display: flex;
   gap: 12px;
   padding: 16px 0;
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border);
 }
 
 .comment-item:last-child {
@@ -88,7 +88,7 @@ defineEmits(['reply'])
   margin-left: 52px;
   padding-left: 0;
   background: rgba(245, 247, 250, 0.5);
-  border-radius: var(--radius-base);
+  border-radius: var(--radius);
   padding: 12px 16px;
   margin-top: 8px;
   border-bottom: none;
@@ -113,7 +113,7 @@ defineEmits(['reply'])
 .comment-nickname {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .admin-tag {
@@ -123,13 +123,13 @@ defineEmits(['reply'])
 
 .comment-time {
   font-size: 12px;
-  color: var(--text-placeholder);
+  color: var(--text-muted);
 }
 
 .comment-content {
   font-size: 14px;
   line-height: 1.7;
-  color: var(--text-regular);
+  color: var(--text-secondary);
   margin-bottom: 8px;
   word-break: break-word;
 }
@@ -141,11 +141,5 @@ defineEmits(['reply'])
 
 .nested-comments {
   margin-top: 8px;
-}
-
-@media (max-width: 768px) {
-  .comment-item.is-reply {
-    margin-left: 20px;
-  }
 }
 </style>

@@ -93,7 +93,7 @@
               </el-input>
               <el-upload
                 :show-file-list="false"
-                :before-upload="handleCoverUpload"
+                :http-request="handleCoverUpload"
                 accept="image/*"
                 style="flex-shrink: 0"
               >
@@ -165,15 +165,18 @@ const rules = {
   content: [{ required: true, message: 'Please enter content', trigger: 'blur' }]
 }
 
-async function handleCoverUpload(file) {
+async function handleCoverUpload(options) {
+  const fd = new FormData()
+  fd.append('file', options.file)
   try {
-    const res = await request.post('/admin/upload', { file }, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    form.coverImage = res.data?.url || res.data
-    ElMessage.success('Image uploaded')
-  } catch (e) {}
-  return false
+    const res = await request.post('/admin/upload', fd)
+    form.coverImage = res.data.url
+    ElMessage.success('上传成功')
+    options.onSuccess()
+  } catch (e) {
+    ElMessage.error('上传失败')
+    options.onError(e)
+  }
 }
 
 async function loadFormData() {
