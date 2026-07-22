@@ -51,13 +51,17 @@ public class CommentService {
 
         // 限流检查（Redis 不可用时跳过）
         if (redisTemplate != null) {
-            String rateKey = "rate:comment:" + ip;
-            Long count = redisTemplate.opsForValue().increment(rateKey);
-            if (count != null && count == 1) {
-                redisTemplate.expire(rateKey, 1, TimeUnit.MINUTES);
-            }
-            if (count != null && count > 5) {
-                throw new BusinessException(429, "评论太频繁，请稍后再试");
+            try {
+                String rateKey = "rate:comment:" + ip;
+                Long count = redisTemplate.opsForValue().increment(rateKey);
+                if (count != null && count == 1) {
+                    redisTemplate.expire(rateKey, 1, TimeUnit.MINUTES);
+                }
+                if (count != null && count > 5) {
+                    throw new BusinessException(429, "评论太频繁，请稍后再试");
+                }
+            } catch (Exception e) {
+                // Redis 不可用，跳过限流，允许提交
             }
         }
 
@@ -69,7 +73,7 @@ public class CommentService {
         comment.setEmail(dto.getEmail());
         comment.setWebsite(dto.getWebsite());
         comment.setContent(dto.getContent());
-        comment.setIsReviewed(0); // 默认未审核
+        comment.setIsReviewed(1); // 默认通过
         comment.setIp(ip);
         comment.setUserAgent(request.getHeader("User-Agent"));
 

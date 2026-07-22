@@ -66,21 +66,20 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Document, ChatDotRound, Clock, FolderOpened, Plus, Edit, ChatLineSquare } from '@element-plus/icons-vue'
+import { Document, ChatDotRound, FolderOpened, Plus, Edit, ChatLineSquare } from '@element-plus/icons-vue'
 import request from '@/api'
 import AdminLayout from '@/components/AdminLayout.vue'
 
 const stats = reactive([
   { label: 'Articles', value: 0, icon: Document, color: 'linear-gradient(135deg, #409eff, #3a8ee6)' },
   { label: 'Comments', value: 0, icon: ChatDotRound, color: 'linear-gradient(135deg, #67c23a, #5daf34)' },
-  { label: 'Pending', value: 0, icon: Clock, color: 'linear-gradient(135deg, #e6a23c, #d48806)' },
   { label: 'Categories', value: 0, icon: FolderOpened, color: 'linear-gradient(135deg, #f56c6c, #e64242)' }
 ])
 
 const quickActions = [
   { label: 'New Article', icon: Plus, route: '/admin/articles/edit', type: 'primary' },
   { label: 'Manage Articles', icon: Edit, route: '/admin/articles' },
-  { label: 'Review Comments', icon: ChatLineSquare, route: '/admin/comments' },
+  { label: 'Manage Comments', icon: ChatLineSquare, route: '/admin/comments' },
   { label: 'Site Config', icon: FolderOpened, route: '/admin/site-config' }
 ]
 
@@ -90,8 +89,7 @@ onMounted(async () => {
     const d = res.data
     stats[0].value = d.articleCount || 0
     stats[1].value = d.commentCount || 0
-    stats[2].value = d.pendingCommentCount || 0
-    stats[3].value = d.categoryCount || 0
+    stats[2].value = d.categoryCount || 0
   } catch (e) {}
 })
 </script>

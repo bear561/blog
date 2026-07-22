@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS t_comment (
     email VARCHAR(128),
     website VARCHAR(256),
     content CLOB NOT NULL,
-    is_reviewed INT DEFAULT 0,
+    is_reviewed INT DEFAULT 1,
     ip VARCHAR(64),
     user_agent VARCHAR(512),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

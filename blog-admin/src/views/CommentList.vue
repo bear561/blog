@@ -5,14 +5,6 @@
         <h2 class="page-title">Comment Management</h2>
       </div>
       <el-card shadow="never">
-        <div class="filter-bar">
-          <el-radio-group v-model="filterStatus" @change="load">
-            <el-radio-button :value="undefined">All</el-radio-button>
-            <el-radio-button :value="0">Pending</el-radio-button>
-            <el-radio-button :value="1">Approved</el-radio-button>
-          </el-radio-group>
-        </div>
-
         <el-table :data="comments" stripe v-loading="loading" style="width: 100%">
           <el-table-column prop="id" label="ID" width="70" align="center" />
           <el-table-column prop="articleTitle" label="Article" min-width="160" show-overflow-tooltip>
@@ -22,28 +14,13 @@
           </el-table-column>
           <el-table-column prop="nickname" label="Nickname" width="120" />
           <el-table-column prop="content" label="Comment" min-width="220" show-overflow-tooltip />
-          <el-table-column label="Status" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag :type="row.isReviewed ? 'success' : 'warning'" size="small">
-                {{ row.isReviewed ? 'Approved' : 'Pending' }}
-              </el-tag>
-            </template>
-          </el-table-column>
           <el-table-column label="Date" width="160" align="center">
             <template #default="{ row }">
               {{ formatDate(row.createdAt || row.createTime) }}
             </template>
           </el-table-column>
-          <el-table-column label="Actions" width="200" align="center" fixed="right">
+          <el-table-column label="Actions" width="100" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button
-                v-if="!row.isReviewed"
-                size="small"
-                type="success"
-                @click="handleApprove(row)"
-              >
-                Approve
-              </el-button>
               <el-popconfirm
                 title="Delete this comment?"
                 confirm-button-text="Delete"
@@ -83,7 +60,6 @@ import AdminLayout from '@/components/AdminLayout.vue'
 
 const comments = ref([])
 const loading = ref(false)
-const filterStatus = ref(undefined)
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
@@ -92,21 +68,12 @@ async function load() {
   loading.value = true
   try {
     const params = { page: page.value, size: pageSize.value }
-    if (filterStatus.value !== undefined) params.isReviewed = filterStatus.value
     const res = await request.get('/admin/comments', { params })
     comments.value = res.data?.records || res.data || []
     total.value = res.data?.total || 0
   } catch (e) {} finally {
     loading.value = false
   }
-}
-
-async function handleApprove(row) {
-  try {
-    await request.put(`/admin/comments/${row.id}/review`, null, { params: { approved: true } })
-    ElMessage.success('Approved')
-    load()
-  } catch (e) {}
 }
 
 async function handleDelete(id) {
@@ -133,10 +100,6 @@ onMounted(load)
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-}
-
-.filter-bar {
-  margin-bottom: 16px;
 }
 
 .pagination-wrapper {

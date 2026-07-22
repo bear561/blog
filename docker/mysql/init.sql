@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS t_comment (
     email VARCHAR(128),
     website VARCHAR(256),
     content TEXT NOT NULL,
-    is_reviewed TINYINT(1) DEFAULT 0,
+    is_reviewed TINYINT(1) DEFAULT 1,
     ip VARCHAR(64),
     user_agent VARCHAR(512),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
