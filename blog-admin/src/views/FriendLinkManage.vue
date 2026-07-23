@@ -70,8 +70,19 @@
           <el-form-item label="URL" prop="url">
             <el-input v-model="form.url" placeholder="https://..." />
           </el-form-item>
-          <el-form-item label="Avatar URL">
-            <el-input v-model="form.avatar" placeholder="Avatar image URL" />
+          <el-form-item label="Avatar">
+            <div style="display: flex; gap: 12px; width: 100%">
+              <el-input v-model="form.avatar" placeholder="Avatar image URL" style="flex: 1">
+                <template #prepend>URL</template>
+              </el-input>
+              <el-upload
+                :show-file-list="false"
+                :http-request="handleAvatarUpload"
+                accept="image/*"
+              >
+                <el-button :icon="Upload" type="primary" plain>Upload</el-button>
+              </el-upload>
+            </div>
           </el-form-item>
           <el-form-item label="Description">
             <el-input v-model="form.description" type="textarea" :rows="2" placeholder="Brief description" />
@@ -95,7 +106,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, nextTick } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import request from '@/api'
 import AdminLayout from '@/components/AdminLayout.vue'
@@ -117,6 +128,20 @@ const form = reactive({
 const rules = {
   name: [{ required: true, message: 'Please enter a name', trigger: 'blur' }],
   url: [{ required: true, message: 'Please enter a URL', trigger: 'blur' }]
+}
+
+async function handleAvatarUpload(options) {
+  const fd = new FormData()
+  fd.append('file', options.file)
+  try {
+    const res = await request.post('/admin/upload', fd)
+    form.avatar = res.data.url
+    ElMessage.success('上传成功')
+    options.onSuccess()
+  } catch (e) {
+    ElMessage.error('上传失败')
+    options.onError(e)
+  }
 }
 
 async function load() {
