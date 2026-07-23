@@ -110,12 +110,12 @@
           </el-form-item>
 
           <el-form-item label="Content (Markdown)" prop="content">
-            <el-input
+            <MdEditor
               v-model="form.content"
-              type="textarea"
-              :rows="18"
-              placeholder="Write your article in Markdown format..."
-              class="markdown-editor"
+              :on-upload-img="handleContentImageUpload"
+              language="en-US"
+              :footers="['markdownTotal']"
+              style="height: 560px"
             />
           </el-form-item>
 
@@ -137,6 +137,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { MdEditor } from 'md-editor-v3'
+import 'md-editor-v3/lib/style.css'
 import request from '@/api'
 import AdminLayout from '@/components/AdminLayout.vue'
 
@@ -177,6 +179,21 @@ async function handleCoverUpload(options) {
     ElMessage.error('上传失败')
     options.onError(e)
   }
+}
+
+async function handleContentImageUpload(files, callback) {
+  const urls = []
+  for (const file of files) {
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await request.post('/admin/upload', fd)
+      urls.push(res.data.url)
+    } catch (e) {
+      ElMessage.error(`图片 ${file.name} 上传失败`)
+    }
+  }
+  callback(urls)
 }
 
 async function loadFormData() {
@@ -274,11 +291,5 @@ onMounted(loadFormData)
   border: 1px dashed #dcdfe6;
   border-radius: 6px;
   text-align: center;
-}
-
-.markdown-editor :deep(.el-textarea__inner) {
-  font-family: 'Fira Code', 'Source Code Pro', Consolas, Monaco, monospace;
-  font-size: 14px;
-  line-height: 1.7;
 }
 </style>
