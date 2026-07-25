@@ -2,7 +2,9 @@
   <div id="app-container">
     <SiteHeader />
     <router-view />
+    <ReadingProgress />
     <SiteFooter />
+    <BackToTop />
     <AIChatWidget />
   </div>
 </template>
@@ -12,6 +14,8 @@ import { onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import SiteHeader from '@/components/SiteHeader.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
+import ReadingProgress from '@/components/ReadingProgress.vue'
+import BackToTop from '@/components/BackToTop.vue'
 import AIChatWidget from '@/components/AIChatWidget.vue'
 
 const appStore = useAppStore()

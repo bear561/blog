@@ -49,7 +49,10 @@ async function doSearch() {
   const kw = keyword.value.trim()
   if (!kw) return
   searchedKeyword.value = kw; searched.value = true; loading.value = true
-  try { const res = await searchArticles(kw); articles.value = res.data.records || []; total.value = res.data.total || 0 } catch (e) {} finally { loading.value = false }
+  try {
+    const res = await searchArticles(kw)
+    articles.value = res.data.records || []; total.value = res.data.total || 0
+  } catch (e) {} finally { loading.value = false }
 }
 function handleSearch() { page.value = 1; router.replace({ name: 'Search', query: { keyword: keyword.value } }); doSearch() }
 function handlePageChange(p) { page.value = p; doSearch(); window.scrollTo({ top: 0, behavior: 'smooth' }) }
@@ -57,14 +60,13 @@ onMounted(() => { if (keyword.value) doSearch() })
 </script>
 
 <style scoped>
-.search-page { max-width: 900px; margin: 24px auto; padding: 0 20px; }
+.search-page { max-width: 860px; margin: 24px auto; padding: 0 20px; }
 .search-header { margin-bottom: 32px; }
 .search-input-wrapper { max-width: 600px; margin: 0 auto; }
-.search-info { text-align: center; margin-top: 20px; font-size: 14px; color: #909399; }
-.search-info strong { color: #409eff; }
-.loading-wrap { padding: 20px 0; }
-.articles-grid { display: flex; flex-direction: column; gap: 20px; }
+.search-info { text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-muted); }
+.search-info strong { color: var(--primary); }
+.articles-grid { display: flex; flex-direction: column; }
 .search-prompt { text-align: center; padding: 80px 0; }
-.prompt-icon { color: #c0c4cc; margin-bottom: 16px; }
-.search-prompt p { font-size: 15px; color: #909399; }
+.prompt-icon { color: var(--text-muted); margin-bottom: 16px; }
+.search-prompt p { font-size: 15px; color: var(--text-secondary); }
 </style>

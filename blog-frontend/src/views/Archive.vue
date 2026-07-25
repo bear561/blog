@@ -1,27 +1,34 @@
 <template>
   <div class="container">
     <div class="page-header">
-      <h1 class="page-title"><el-icon :size="24"><Clock /></el-icon>Archive</h1>
+      <h1 class="page-title">归档</h1>
       <p class="page-subtitle">{{ totalArticles }} 篇文章</p>
     </div>
     <div v-if="loading" class="loading-wrap"><el-skeleton :rows="8" animated /></div>
     <div v-else-if="archiveList.length === 0"><el-empty description="暂无文章" /></div>
     <div v-else class="timeline">
       <div v-for="group in archiveList" :key="group.year" class="timeline-year">
-        <div class="year-header">
-          <span class="year-label">{{ group.year }}</span>
+        <!-- 年份标记 -->
+        <div class="year-marker">
+          <span class="year-dot"></span>
+          <h2 class="year-label">{{ group.year }}</h2>
           <span class="year-count">{{ group.articles?.length || 0 }} 篇</span>
         </div>
-        <div class="month-list">
+
+        <!-- 文章列表 -->
+        <div class="year-articles">
           <div v-for="article in group.articles" :key="article.id" class="timeline-item">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-              <span class="timeline-date">{{ formatDate(article.createdAt, 'MM-DD') }}</span>
-              <router-link :to="`/article/${article.id}`" class="timeline-title">{{ article.title }}</router-link>
-              <span class="timeline-category" v-if="article.categoryName">
-                <el-tag size="small" effect="plain">{{ article.categoryName }}</el-tag>
-              </span>
+            <div class="timeline-line">
+              <span class="line-dot"></span>
             </div>
+            <router-link :to="`/article/${article.id}`" class="timeline-card">
+              <span class="card-date">{{ formatDate(article.createdAt, 'MM-DD') }}</span>
+              <span class="card-title">{{ article.title }}</span>
+              <span class="card-meta-right">
+                <span class="card-cat" v-if="article.categoryName">{{ article.categoryName }}</span>
+                <span class="card-read">约 {{ readMin(article) }} 分钟</span>
+              </span>
+            </router-link>
           </div>
         </div>
       </div>
@@ -31,13 +38,15 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Clock } from '@element-plus/icons-vue'
 import { getArchive } from '@/api/article'
 import { formatDate } from '@/utils/date'
+import { readingTime } from '@/utils/readingTime'
 
 const archiveList = ref([])
 const loading = ref(false)
 const totalArticles = computed(() => archiveList.value.reduce((sum, g) => sum + (g.articles?.length || 0), 0))
+
+function readMin(article) { return readingTime(article.contentHtml || article.summary || '') }
 
 onMounted(async () => {
   loading.value = true
@@ -47,22 +56,67 @@ onMounted(async () => {
 
 <style scoped>
 .page-header { text-align: center; padding: 40px 0 32px; }
-.page-title { font-size: 28px; font-weight: 700; color: #303133; display: flex; align-items: center; justify-content: center; gap: 12px; }
-.page-subtitle { margin-top: 8px; font-size: 14px; color: #909399; }
-.loading-wrap { padding: 20px 0; }
-.timeline { max-width: 700px; margin: 0 auto; position: relative; padding-left: 24px; }
-.timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: #ebeef5; }
-.timeline-year { margin-bottom: 32px; }
-.year-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.year-label { font-size: 22px; font-weight: 700; color: #303133; }
-.year-count { font-size: 12px; color: #909399; }
-.month-list { display: flex; flex-direction: column; gap: 8px; }
-.timeline-item { display: flex; align-items: center; gap: 16px; position: relative; }
-.timeline-dot { width: 10px; height: 10px; border-radius: 50%; background: #409eff; border: 2px solid #fff; box-shadow: 0 0 0 2px #409eff; flex-shrink: 0; margin-left: -29px; z-index: 1; }
-.timeline-content { display: flex; align-items: center; gap: 12px; padding: 10px 18px; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.06); flex: 1; transition: box-shadow .2s; }
-.timeline-content:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
-.timeline-date { font-size: 13px; color: #909399; font-family: monospace; flex-shrink: 0; }
-.timeline-title { font-size: 15px; color: #303133; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.timeline-title:hover { color: #409eff; }
-.timeline-category { flex-shrink: 0; }
+.page-title { font-size: 24px; font-weight: 700; color: var(--text); }
+.page-subtitle { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+
+.timeline { max-width: 680px; margin: 0 auto; padding-bottom: 60px; position: relative; }
+
+/* 年份 */
+.timeline-year { margin-bottom: 40px; }
+.year-marker {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px; padding-left: 6px;
+}
+.year-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--primary); flex-shrink: 0;
+}
+.year-label {
+  font-family: var(--font-mono);
+  font-size: 26px; font-weight: 500; color: var(--text);
+}
+.year-count { font-size: 13px; color: var(--text-muted); font-family: var(--font-sans); }
+
+/* 文章 */
+.year-articles { position: relative; padding-left: 24px; }
+/* 竖线 */
+.year-articles::before {
+  content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px;
+  width: 1.5px; background: var(--border);
+}
+
+.timeline-item { display: flex; align-items: center; position: relative; }
+.timeline-line { position: absolute; left: -19px; top: 50%; transform: translateY(-50%); }
+.line-dot {
+  display: block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--bg-card); border: 2px solid var(--primary);
+}
+
+.timeline-card {
+  display: flex; align-items: center; gap: 16px; width: 100%;
+  padding: 12px 18px; margin: 3px 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color .2s, transform .15s;
+  color: inherit; text-decoration: none;
+}
+.timeline-card:hover {
+  border-color: var(--primary-light);
+  transform: translateX(4px);
+}
+
+.card-date {
+  font-family: var(--font-mono); font-size: 13px;
+  color: var(--primary); flex-shrink: 0; width: 42px;
+}
+.card-title {
+  font-size: 14px; color: var(--text); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.card-meta-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.card-cat {
+  font-size: 11px; color: var(--text-muted);
+  border: 1px solid var(--border); padding: 1px 8px; border-radius: 100px;
+}
+.card-read { font-size: 11px; color: var(--text-muted); }
 </style>

@@ -15,36 +15,15 @@
 
 <script setup>
 defineProps({
-  current: {
-    type: Number,
-    default: 1
-  },
-  total: {
-    type: Number,
-    default: 0
-  },
-  pageSize: {
-    type: Number,
-    default: 10
-  }
+  current: { type: Number, default: 1 },
+  total: { type: Number, default: 0 },
+  pageSize: { type: Number, default: 10 }
 })
-
 const emit = defineEmits(['page-change', 'size-change'])
-
-function handlePageChange(page) {
-  emit('page-change', page)
-}
-
-function handleSizeChange(size) {
-  emit('size-change', size)
-}
+function handlePageChange(page) { emit('page-change', page) }
+function handleSizeChange(size) { emit('size-change', size) }
 </script>
 
 <style scoped>
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 40px;
-  padding: 20px 0;
-}
+.pagination-wrapper { display: flex; justify-content: center; margin-top: 40px; padding: 20px 0; }
 </style>

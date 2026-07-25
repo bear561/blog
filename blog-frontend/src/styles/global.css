@@ -1,22 +1,65 @@
+/* ========================================
+   配色: 手作温暖风
+   排版: 杂志阅读风
+   ======================================== */
+
 :root {
-  --primary: #3b82f6;
-  --primary-dark: #2563eb;
-  --primary-light: #60a5fa;
-  --accent: #8b5cf6;
-  --bg: #f8fafc;
-  --bg-card: #ffffff;
-  --text: #1e293b;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --border: #e2e8f0;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
-  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
-  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
-  --radius: 12px;
-  --radius-sm: 8px;
+  /* 暖色系 */
+  --primary: #c44f2e;
+  --primary-dark: #a33d20;
+  --primary-light: #d06b4d;
+  --accent: #5b8c5a;
+
+  --bg: #f9f4eb;
+  --bg-card: #fdfaf4;
+  --bg-warm: #f3ede2;
+  --bg-code: #eeeadb;
+
+  --text: #1a1a1a;
+  --text-secondary: #5c5b59;
+  --text-muted: #9c9a96;
+  --border: #e8e5df;
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 16px;
   --max-width: 1440px;
   --header-height: 60px;
+
+  /* 字体 */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-serif: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* Element Plus 全局覆盖 */
+  --el-color-primary: #c44f2e;
+  --el-color-primary-light-3: #d06b4d;
+  --el-color-primary-light-5: #db8c75;
+  --el-color-primary-light-7: #e7ad9d;
+  --el-color-primary-light-8: #edc4b9;
+  --el-color-primary-light-9: #f3dbd4;
+  --el-color-primary-dark-2: #a33d20;
+  --el-color-success: #5b8c5a;
+  --el-color-warning: #d4a44c;
+  --el-color-danger: #c44f2e;
+  --el-border-color: #e8e5df;
+  --el-border-color-light: #ece8dd;
+  --el-border-color-lighter: #f3efe6;
+  --el-bg-color: #fdfaf4;
+  --el-bg-color-page: #f9f4eb;
+  --el-text-color-primary: #1a1a1a;
+  --el-text-color-regular: #5c5b59;
+  --el-text-color-secondary: #9c9a96;
+  --el-text-color-placeholder: #b8b5b0;
+  --el-fill-color-blank: #fdfaf4;
+  --el-border-radius-base: 6px;
+  --el-border-radius-small: 4px;
+
+  /* 阴影 - 极淡暖色 */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.03);
+  --shadow: 0 1px 3px rgba(0,0,0,.04);
+  --shadow-md: 0 2px 6px rgba(0,0,0,.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.05);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,14 +67,15 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-sans);
   color: var(--text);
   background: var(--bg);
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-a { color: var(--primary); text-decoration: none; }
+a { color: var(--primary); text-decoration: none; transition: color .2s; }
 a:hover { color: var(--primary-dark); }
 img { max-width: 100%; height: auto; }
 
@@ -42,12 +86,43 @@ img { max-width: 100%; height: auto; }
 }
 
 .content-container {
-  max-width: 860px;
+  max-width: 740px;
   margin: 0 auto;
   padding: 0 24px;
 }
 
+/* 滚动条 */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: #d5d1c9; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #b8b3a9; }
+
+/* Element Plus 组件覆盖 */
+.el-button--primary {
+  --el-button-bg-color: var(--primary);
+  --el-button-border-color: var(--primary);
+  --el-button-hover-bg-color: var(--primary-dark);
+  --el-button-hover-border-color: var(--primary-dark);
+}
+.el-tag {
+  --el-tag-border-color: var(--border);
+}
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--border) inset !important;
+}
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--text-muted) inset !important;
+}
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--primary) inset !important;
+}
+
+/* 页面通用标题 */
+.page-header { text-align: center; padding: 40px 0 32px; }
+.page-title {
+  font-size: 24px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.page-title .el-icon { color: var(--primary); }
+.page-subtitle { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+.loading-wrap { padding: 20px 0; }

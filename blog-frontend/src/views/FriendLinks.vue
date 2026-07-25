@@ -1,38 +1,51 @@
 <template>
   <div class="container">
     <div class="page-header">
-      <h1 class="page-title"><el-icon :size="24"><Link /></el-icon>友情链接</h1>
+      <h1 class="page-title">友情链接</h1>
       <p class="page-subtitle">共 {{ links.length }} 位朋友</p>
     </div>
     <div v-if="loading" class="loading-wrap"><el-skeleton :rows="4" animated /></div>
-    <div v-else-if="links.length > 0" class="links-grid">
-      <el-card v-for="link in links" :key="link.id" class="link-card" shadow="hover" @click="openLink(link.url)">
-        <div class="link-content">
-          <el-avatar :src="link.avatar" :size="56" class="link-avatar">{{ link.name?.charAt(0)?.toUpperCase() || 'L' }}</el-avatar>
-          <div class="link-info">
-            <span class="link-name">{{ link.name }}</span>
-            <span class="link-desc">{{ link.description || 'No description' }}</span>
-          </div>
-          <el-icon class="link-arrow"><ArrowRight /></el-icon>
+    <div v-else-if="links.length > 0" class="links-wall">
+      <a
+        v-for="link in links" :key="link.id"
+        class="link-card"
+        :class="sizeClass(link.id)"
+        :href="link.url"
+        target="_blank"
+        rel="noopener"
+      >
+        <el-avatar :src="link.avatar" :size="avatarSize(link.id)" class="link-avatar">
+          {{ link.name?.charAt(0)?.toUpperCase() || 'L' }}
+        </el-avatar>
+        <div class="link-info">
+          <span class="link-name">{{ link.name }}</span>
+          <span class="link-desc" v-if="link.description">{{ link.description }}</span>
         </div>
-      </el-card>
+      </a>
     </div>
     <el-empty v-else description="暂无友链" />
     <div class="exchange-notice" v-if="links.length > 0">
-      <el-card shadow="never" class="notice-card"><p>想交换友链？欢迎联系我！</p></el-card>
+      <p>想交换友链？欢迎联系我！</p>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Link, ArrowRight } from '@element-plus/icons-vue'
 import { getFriendLinks } from '@/api/friendLink'
 
 const links = ref([])
 const loading = ref(false)
 
-function openLink(url) { if (url) window.open(url, '_blank') }
+// 基于 id 确定性分配尺寸，避免每次渲染抖动
+const SIZES = ['lg', 'md', 'md', 'sm', 'md', 'lg', 'sm', 'md']
+function sizeClass(id) {
+  return `card-${SIZES[id % SIZES.length]}`
+}
+function avatarSize(id) {
+  const s = SIZES[id % SIZES.length]
+  return s === 'lg' ? 56 : s === 'md' ? 48 : 40
+}
 
 onMounted(async () => {
   loading.value = true
@@ -42,20 +55,48 @@ onMounted(async () => {
 
 <style scoped>
 .page-header { text-align: center; padding: 40px 0 32px; }
-.page-title { font-size: 28px; font-weight: 700; color: #303133; display: flex; align-items: center; justify-content: center; gap: 12px; }
-.page-subtitle { margin-top: 8px; font-size: 14px; color: #909399; }
-.loading-wrap { padding: 20px 0; }
-.links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto; }
-.link-card { cursor: pointer; border-radius: 8px; transition: transform .2s, box-shadow .2s; }
-.link-card:hover { transform: translateY(-2px); }
-.link-content { display: flex; align-items: center; gap: 16px; }
+.page-title { font-size: 24px; font-weight: 700; color: var(--text); }
+.page-subtitle { margin-top: 8px; font-size: 14px; color: var(--text-muted); }
+
+/* 友链墙 */
+.links-wall {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+  gap: 14px; max-width: 800px; margin: 0 auto;
+}
+
+.link-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left; cursor: pointer;
+  transition: border-color .25s, transform .2s, box-shadow .2s;
+}
+.link-card:hover {
+  border-color: var(--primary-light); transform: translateY(-2px);
+  box-shadow: 0 2px 12px rgba(196,79,46,.06);
+}
 .link-avatar { flex-shrink: 0; }
-.link-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.link-name { font-size: 16px; font-weight: 600; color: #303133; }
-.link-desc { font-size: 13px; color: #909399; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.link-arrow { color: #c0c4cc; flex-shrink: 0; transition: transform .2s, color .2s; }
-.link-card:hover .link-arrow { transform: translateX(4px); color: #409eff; }
-.exchange-notice { max-width: 900px; margin: 32px auto 0; }
-.notice-card { text-align: center; background: #f5f7fa; border: none; }
-.notice-card p { font-size: 14px; color: #909399; margin: 0; }
+
+.link-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.link-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.link-desc {
+  font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px;
+}
+
+/* 三种尺寸 */
+.card-lg { padding: 20px 24px; gap: 14px; }
+.card-lg .link-name { font-size: 15px; }
+.card-lg .link-desc { max-width: 220px; }
+
+.card-sm { padding: 12px 14px; gap: 8px; }
+.card-sm .link-name { font-size: 13px; }
+.card-sm .link-desc { max-width: 120px; }
+
+/* 底部分隔线 */
+.link-card:not(.card-sm) .link-info { border-left: none; }
+
+.exchange-notice { max-width: 800px; margin: 40px auto 0; text-align: center; }
+.exchange-notice p { font-size: 13px; color: var(--text-muted); padding: 14px; background: var(--bg-warm); border-radius: var(--radius); }
 </style>

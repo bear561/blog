@@ -1,56 +1,33 @@
 <template>
   <div class="ai-chat-widget">
-    <!-- Floating button -->
+    <!-- 浮动按钮: 安静的圆环 -->
     <transition name="fade-scale">
-      <div
-        v-if="!aiStore.isOpen"
-        class="chat-float-btn"
-        @click="toggleChat"
-      >
-        <el-icon :size="24"><ChatDotRound /></el-icon>
+      <div v-if="!aiStore.isOpen" class="chat-float-btn" @click="toggleChat" title="问答助手">
+        <el-icon :size="20"><ChatDotRound /></el-icon>
       </div>
     </transition>
 
-    <!-- Chat panel -->
+    <!-- 聊天面板 -->
     <transition name="slide-up">
       <div v-if="aiStore.isOpen" class="chat-panel">
         <div class="chat-header">
-          <div class="header-title">
-            <el-icon :size="18"><ChatDotRound /></el-icon>
-            <span>AI Assistant</span>
-          </div>
+          <span class="header-title">问答</span>
           <div class="header-actions">
-            <el-button
-              text
-              :icon="Delete"
-              size="small"
-              @click="aiStore.clearMessages()"
-              title="Clear chat"
-            />
-            <el-button
-              text
-              :icon="Close"
-              size="small"
-              @click="toggleChat"
-            />
+            <el-button text :icon="Delete" size="small" @click="aiStore.clearMessages()" title="清空对话" />
+            <el-button text :icon="Close" size="small" @click="toggleChat" />
           </div>
         </div>
 
         <div class="chat-messages" ref="messagesContainer">
           <div v-if="aiStore.messages.length === 0" class="chat-welcome">
-            <div class="welcome-icon">
-              <el-icon :size="40"><ChatDotRound /></el-icon>
-            </div>
-            <p>Hello! I'm your AI assistant. How can I help you today?</p>
+            <p class="welcome-text">有什么我可以帮你的？</p>
             <div class="quick-prompts">
-              <el-tag
+              <span
                 v-for="prompt in quickPrompts"
                 :key="prompt"
                 class="prompt-tag"
                 @click="sendQuickPrompt(prompt)"
-              >
-                {{ prompt }}
-              </el-tag>
+              >{{ prompt }}</span>
             </div>
           </div>
           <div
@@ -60,7 +37,7 @@
             :class="msg.role"
           >
             <div class="message-avatar" v-if="msg.role === 'assistant'">
-              <el-icon :size="24"><ChatDotRound /></el-icon>
+              <el-icon :size="20"><ChatDotRound /></el-icon>
             </div>
             <div class="message-content">
               <div class="message-text" v-text="msg.content"></div>
@@ -69,7 +46,7 @@
               </div>
             </div>
             <div class="message-avatar" v-if="msg.role === 'user'">
-              <el-avatar :size="32" icon="UserFilled" />
+              <el-avatar :size="28" icon="UserFilled" />
             </div>
           </div>
         </div>
@@ -79,7 +56,7 @@
             v-model="inputText"
             type="textarea"
             :rows="2"
-            placeholder="Type your message..."
+            placeholder="输入消息..."
             resize="none"
             @keyup.enter.exact="handleSend"
           />
@@ -87,6 +64,7 @@
             type="primary"
             :icon="Promotion"
             circle
+            size="small"
             class="send-btn"
             :loading="aiStore.isStreaming"
             :disabled="!inputText.trim()"
@@ -108,9 +86,9 @@ const inputText = ref('')
 const messagesContainer = ref(null)
 
 const quickPrompts = [
-  'What is this blog about?',
-  'Recommend some articles',
-  'Tell me a tech joke'
+  '这个博客是关于什么的？',
+  '推荐几篇文章',
+  '讲个冷笑话'
 ]
 
 function toggleChat() {
@@ -139,9 +117,7 @@ async function scrollToBottom() {
 
 watch(
   () => aiStore.messages.length,
-  () => {
-    scrollToBottom()
-  }
+  () => { scrollToBottom() }
 )
 </script>
 
@@ -153,216 +129,99 @@ watch(
   z-index: 1000;
 }
 
-/* Floating button */
+/* 浮动按钮 */
 .chat-float-btn {
-  width: 56px;
-  height: 56px;
+  width: 48px; height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), #764ba2);
+  background: var(--primary);
   color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 12px rgba(196,79,46,.25);
+  transition: transform .2s, box-shadow .2s;
 }
+.chat-float-btn:hover { transform: scale(1.06); box-shadow: 0 4px 18px rgba(196,79,46,.35); }
 
-.chat-float-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.5);
-}
-
-/* Chat panel */
+/* 聊天面板 */
 .chat-panel {
-  width: 380px;
-  height: 560px;
+  width: 360px; height: 520px;
   background: var(--bg-card);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; overflow: hidden;
 }
 
 .chat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, var(--primary), #764ba2);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px;
+  background: var(--primary);
   color: #fff;
   flex-shrink: 0;
 }
+.header-title { font-size: 14px; font-weight: 600; }
+.header-actions { display: flex; gap: 4px; }
+.header-actions :deep(.el-button) { color: rgba(255,255,255,.8); }
+.header-actions :deep(.el-button:hover) { color: #fff; }
 
-.header-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.header-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.header-actions .el-button {
-  color: #fff;
-}
-
-/* Messages area */
+/* 消息区 */
 .chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
 }
 
-.chat-welcome {
-  text-align: center;
-  padding: 40px 20px;
-}
+.chat-welcome { text-align: center; padding: 40px 20px; }
+.welcome-text { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
 
-.welcome-icon {
-  color: var(--primary);
-  margin-bottom: 16px;
-}
-
-.chat-welcome p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 20px;
-}
-
-.quick-prompts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-}
-
+.quick-prompts { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .prompt-tag {
-  cursor: pointer;
-  max-width: 100%;
+  font-size: 12px; color: var(--text-secondary);
+  border: 1px solid var(--border); padding: 6px 14px; border-radius: 100px;
+  cursor: pointer; transition: all .15s;
 }
+.prompt-tag:hover { color: var(--primary); border-color: var(--primary-light); background: #fdf0eb; }
 
-.prompt-tag:hover {
-  background: rgba(64, 158, 255, 0.1);
-}
-
-/* Message */
-.chat-message {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-}
-
-.chat-message.user {
-  flex-direction: row-reverse;
-}
+/* 消息气泡 */
+.chat-message { display: flex; gap: 8px; align-items: flex-start; }
+.chat-message.user { flex-direction: row-reverse; }
 
 .chat-message.assistant .message-content {
-  background: var(--bg);
-  color: var(--text);
-  border-radius: 4px 12px 12px 12px;
+  background: var(--bg-warm); color: var(--text);
+  border-radius: 4px 10px 10px 10px;
 }
-
 .chat-message.user .message-content {
-  background: linear-gradient(135deg, var(--primary), #764ba2);
-  color: #fff;
-  border-radius: 12px 4px 12px 12px;
+  background: var(--accent); color: #fff;
+  border-radius: 10px 4px 10px 10px;
 }
 
-.message-content {
-  padding: 10px 14px;
-  max-width: 260px;
-  font-size: 13px;
-  line-height: 1.6;
-  word-break: break-word;
-}
+.message-content { padding: 10px 14px; max-width: 250px; font-size: 13px; line-height: 1.6; word-break: break-word; }
+.message-avatar { flex-shrink: 0; color: var(--primary); }
 
-.message-avatar {
-  flex-shrink: 0;
-  color: var(--primary);
-}
-
-/* Typing indicator */
-.typing-indicator {
-  display: flex;
-  gap: 4px;
-  padding: 4px 0;
-}
-
+/* 输入中 */
+.typing-indicator { display: flex; gap: 4px; padding: 4px 0; }
 .typing-indicator span {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: 6px; height: 6px; border-radius: 50%;
   background: var(--text-muted);
   animation: typing 1.4s infinite ease-in-out;
 }
-
-.typing-indicator span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-indicator span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
+.typing-indicator span:nth-child(2) { animation-delay: .2s; }
+.typing-indicator span:nth-child(3) { animation-delay: .4s; }
 @keyframes typing {
-  0%, 60%, 100% {
-    opacity: 0.3;
-    transform: scale(0.8);
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0%, 60%, 100% { opacity: .3; transform: scale(.8); }
+  30% { opacity: 1; transform: scale(1); }
 }
 
-/* Input area */
+/* 输入区 */
 .chat-input {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  flex-shrink: 0;
+  padding: 12px 16px; border-top: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
 }
+.chat-input :deep(.el-textarea__inner) { font-size: 13px; border-radius: 8px; }
+.send-btn { flex-shrink: 0; }
 
-.chat-input :deep(.el-textarea__inner) {
-  font-size: 13px;
-  border-radius: 8px;
-}
-
-.send-btn {
-  flex-shrink: 0;
-}
-
-/* Transitions */
-.fade-scale-enter-active,
-.fade-scale-leave-active {
-  transition: all 0.3s ease;
-}
-
-.fade-scale-enter-from,
-.fade-scale-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
+/* 过渡 */
+.fade-scale-enter-active, .fade-scale-leave-active { transition: all .3s ease; }
+.fade-scale-enter-from, .fade-scale-leave-to { opacity: 0; transform: scale(.8); }
+.slide-up-enter-active, .slide-up-leave-active { transition: all .3s ease; }
+.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(20px); }
 </style>
