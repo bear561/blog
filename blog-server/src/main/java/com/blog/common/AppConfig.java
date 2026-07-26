@@ -11,7 +11,6 @@ public class AppConfig {
 
     private JwtConfig jwt = new JwtConfig();
     private UploadConfig upload = new UploadConfig();
-    private AiConfig ai = new AiConfig();
 
     @Data
     public static class JwtConfig {
@@ -22,13 +21,5 @@ public class AppConfig {
     @Data
     public static class UploadConfig {
         private String path;
-    }
-
-    @Data
-    public static class AiConfig {
-        private String provider;
-        private String apiKey;
-        private String model;
-        private int maxTokens;
     }
 }

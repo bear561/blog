@@ -22,8 +22,3 @@ app:
     expiration: 86400000
   upload:
     path: ${UPLOAD_PATH:./uploads}
-  ai:
-    provider: ${AI_PROVIDER:deepseek}
-    api-key: ${AI_API_KEY}
-    model: ${AI_MODEL:deepseek-chat}
-    max-tokens: 2000
