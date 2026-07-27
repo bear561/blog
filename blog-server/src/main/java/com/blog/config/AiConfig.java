@@ -1,8 +1,11 @@
 package com.blog.config;
 
+import com.blog.service.ai.BlogAiAssistant;
+import com.blog.service.ai.BlogTools;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.service.AiServices;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +39,17 @@ public class AiConfig {
     ChatMemoryProvider chatMemoryProvider() {
         return memoryId -> MessageWindowChatMemory.builder()
                 .maxMessages(10)
+                .build();
+    }
+
+    @Bean
+    BlogAiAssistant blogAiAssistant(OpenAiStreamingChatModel streamingChatModel,
+                                     ChatMemoryProvider chatMemoryProvider,
+                                     BlogTools blogTools) {
+        return AiServices.builder(BlogAiAssistant.class)
+                .streamingChatLanguageModel(streamingChatModel)
+                .chatMemoryProvider(chatMemoryProvider)
+                .tools(blogTools)
                 .build();
     }
 }
