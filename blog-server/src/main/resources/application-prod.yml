@@ -33,6 +33,3 @@ app:
     expiration: ${JWT_EXPIRATION:86400000}
   upload:
     path: ${UPLOAD_PATH:/data/uploads}
-  ai:
-    api-key: ${AI_API_KEY}
-    model: ${AI_MODEL:deepseek-chat}

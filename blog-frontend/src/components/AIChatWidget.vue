@@ -39,8 +39,8 @@
             <div class="message-avatar" v-if="msg.role === 'assistant'">
               <el-icon :size="20"><ChatDotRound /></el-icon>
             </div>
-            <div class="message-content">
-              <div class="message-text" v-text="msg.content"></div>
+            <div class="message-content" @click="onMessageClick">
+              <div class="message-text" v-html="renderMarkdown(msg.content)"></div>
               <div v-if="msg.role === 'assistant' && msg.content === '' && aiStore.isStreaming" class="typing-indicator">
                 <span></span><span></span><span></span>
               </div>
@@ -78,10 +78,13 @@
 
 <script setup>
 import { ref, watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ChatDotRound, Close, Delete, Promotion } from '@element-plus/icons-vue'
 import { useAiStore } from '@/stores/ai'
+import { marked } from 'marked'
 
 const aiStore = useAiStore()
+const router = useRouter()
 const inputText = ref('')
 const messagesContainer = ref(null)
 
@@ -90,6 +93,36 @@ const quickPrompts = [
   '推荐几篇文章',
   '讲个冷笑话'
 ]
+
+function onMessageClick(e) {
+  const link = e.target.closest('a')
+  if (!link) return
+  const href = link.getAttribute('href')
+  if (!href) return
+  // 内部的相对路径：/article/7
+  if (href.startsWith('/') && !href.startsWith('//')) {
+    e.preventDefault()
+    router.push(href)
+    return
+  }
+  // 同域的绝对路径：https://xiongjie-blog.com/article/7
+  try {
+    const u = new URL(href)
+    if (u.origin === window.location.origin) {
+      e.preventDefault()
+      router.push(u.pathname + u.search + u.hash)
+    }
+  } catch {}
+}
+
+function renderMarkdown(text) {
+  if (!text) return ''
+  try {
+    return marked.parse(text, { breaks: true, gfm: true })
+  } catch {
+    return text.replace(/</g, '&lt;')
+  }
+}
 
 function toggleChat() {
   aiStore.isOpen = !aiStore.isOpen
@@ -144,7 +177,7 @@ watch(
 
 /* 聊天面板 */
 .chat-panel {
-  width: 360px; height: 520px;
+  width: 370px; height: 540px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -195,6 +228,56 @@ watch(
 }
 
 .message-content { padding: 10px 14px; max-width: 250px; font-size: 13px; line-height: 1.6; word-break: break-word; }
+.chat-message.assistant .message-content { max-width: 310px; padding: 14px 16px; }
+
+/* ---- Markdown rendered content ---- */
+
+/* 无样式列表 = 文章卡片 */
+.message-content :deep(ul) { margin: 4px 0; padding: 0; list-style: none; }
+.message-content :deep(ol) { margin: 4px 0; padding-left: 18px; }
+
+/* 列表项 = 卡片分隔 */
+.message-content :deep(li) {
+  margin: 0 0 10px 0; padding: 0 0 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.message-content :deep(li:last-child) { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+/* 文章标题（li 内的第一个 strong） */
+.message-content :deep(li strong) {
+  display: block; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px;
+}
+.message-content :deep(p strong) { font-weight: 600; }
+
+/* 小标题 */
+.message-content :deep(h1), .message-content :deep(h2), .message-content :deep(h3),
+.message-content :deep(h4), .message-content :deep(h5), .message-content :deep(h6) {
+  margin: 6px 0 4px; font-size: 14px; font-weight: 600;
+}
+
+/* 日期/元信息 code */
+.message-content :deep(code) {
+  font-size: 11px; background: transparent; color: var(--text-muted); padding: 0;
+}
+
+/* 链接按钮 */
+.message-content :deep(a) {
+  color: var(--primary); text-decoration: none; font-size: 12px;
+  display: inline-block; margin-top: 2px;
+}
+.message-content :deep(a:hover) { text-decoration: underline; }
+
+.message-content :deep(p) { margin: 3px 0; }
+.message-content :deep(hr) { margin: 8px 0; border: none; border-top: 1px solid var(--border); }
+.message-content :deep(pre) {
+  font-size: 12px; background: rgba(0,0,0,.04); padding: 8px; border-radius: 4px;
+  overflow-x: auto; margin: 4px 0;
+}
+.message-content :deep(blockquote) {
+  margin: 4px 0; padding-left: 10px; border-left: 3px solid var(--primary-light);
+  color: var(--text-secondary);
+}
+
 .message-avatar { flex-shrink: 0; color: var(--primary); }
 
 /* 输入中 */
