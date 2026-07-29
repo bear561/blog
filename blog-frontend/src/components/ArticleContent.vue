@@ -1,9 +1,9 @@
 <template>
-  <div class="article-content markdown-body" v-html="renderedHtml"></div>
+  <div ref="contentRef" class="article-content markdown-body" v-html="renderedHtml"></div>
 </template>
 
 <script setup>
-import { computed, onMounted, nextTick } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark-dimmed.css'
@@ -19,37 +19,27 @@ const props = defineProps({
   }
 })
 
+const contentRef = ref(null)
+
 const renderedHtml = computed(() => {
   if (props.html) return props.html
   if (props.markdown) {
-    return marked(props.markdown, {
-      breaks: true,
-      gfm: true,
-      highlight(code, lang) {
-        if (lang && hljs.getLanguage(lang)) {
-          return hljs.highlight(code, { language: lang }).value
-        }
-        return hljs.highlightAuto(code).value
-      }
-    })
+    // marked v5+ 已移除 highlight 选项，代码高亮统一交给下面的 hljs.highlightElement
+    return marked(props.markdown, { breaks: true, gfm: true })
   }
   return ''
 })
 
 function highlightCodeBlocks() {
-  nextTick(() => {
-    document.querySelectorAll('.article-content pre code').forEach((block) => {
-      if (!block.dataset.highlighted) {
-        hljs.highlightElement(block)
-        block.dataset.highlighted = 'true'
-      }
-    })
+  // 只查询本组件内的代码块，避免影响页面其他实例
+  contentRef.value?.querySelectorAll('pre code').forEach((block) => {
+    hljs.highlightElement(block)
   })
 }
 
-onMounted(() => {
-  highlightCodeBlocks()
-})
+// flush: 'post' 保证回调在 v-html 更新 DOM 之后执行；
+// immediate: true 覆盖挂载时已有内容的场景，异步加载完成后内容变化也会重新触发
+watch(renderedHtml, highlightCodeBlocks, { immediate: true, flush: 'post' })
 </script>
 
 <style scoped>

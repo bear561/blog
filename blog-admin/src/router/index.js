@@ -62,6 +62,12 @@ const routes = [
     name: 'SiteConfig',
     component: () => import('@/views/SiteConfig.vue'),
     meta: { title: '站点配置', requiresAuth: true }
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/NotFound.vue'),
+    meta: { title: '页面不存在' }
   }
 ]
 

@@ -82,6 +82,7 @@ import { useRouter } from 'vue-router'
 import { ChatDotRound, Close, Delete, Promotion } from '@element-plus/icons-vue'
 import { useAiStore } from '@/stores/ai'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const aiStore = useAiStore()
 const router = useRouter()
@@ -99,28 +100,29 @@ function onMessageClick(e) {
   if (!link) return
   const href = link.getAttribute('href')
   if (!href) return
-  // 内部的相对路径：/article/7
-  if (href.startsWith('/') && !href.startsWith('//')) {
-    e.preventDefault()
-    router.push(href)
+
+  // 以当前页面为基准解析：根路径 /article/7、相对路径 article/7、
+  // 协议相对 //host/...、绝对 URL 都能正确判断是否同域
+  let url
+  try {
+    url = new URL(href, window.location.href)
+  } catch {
     return
   }
-  // 同域的绝对路径：https://xiongjie-blog.com/article/7
-  try {
-    const u = new URL(href)
-    if (u.origin === window.location.origin) {
-      e.preventDefault()
-      router.push(u.pathname + u.search + u.hash)
-    }
-  } catch {}
+  // 只拦截同域链接走 SPA 路由——整页刷新会销毁 Pinia store，导致聊天上下文丢失；
+  // 真正的外链交给浏览器默认行为
+  if (url.origin !== window.location.origin) return
+  e.preventDefault()
+  router.push(url.pathname + url.search + url.hash)
 }
 
 function renderMarkdown(text) {
   if (!text) return ''
   try {
-    return marked.parse(text, { breaks: true, gfm: true })
+    // AI 输出不可信：渲染后统一经 DOMPurify 消毒再进 v-html
+    return DOMPurify.sanitize(marked.parse(text, { breaks: true, gfm: true }))
   } catch {
-    return text.replace(/</g, '&lt;')
+    return DOMPurify.sanitize(text.replace(/</g, '&lt;'))
   }
 }
 
