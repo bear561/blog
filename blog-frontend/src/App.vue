@@ -1,10 +1,6 @@
 <template>
   <div id="app-container">
-    <SiteHeader />
-    <router-view />
-    <ReadingProgress />
-    <SiteFooter />
-    <BackToTop />
+    <component :is="isMobile ? MobileLayout : DesktopLayout" />
     <AIChatWidget />
   </div>
 </template>
@@ -12,13 +8,13 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import SiteHeader from '@/components/SiteHeader.vue'
-import SiteFooter from '@/components/SiteFooter.vue'
-import ReadingProgress from '@/components/ReadingProgress.vue'
-import BackToTop from '@/components/BackToTop.vue'
+import { useDeviceMode } from '@/composables/useDeviceMode'
 import AIChatWidget from '@/components/AIChatWidget.vue'
+import DesktopLayout from '@/layouts/DesktopLayout.vue'
+import MobileLayout from '@/layouts/MobileLayout.vue'
 
 const appStore = useAppStore()
+const { isMobile } = useDeviceMode()
 
 onMounted(async () => {
   await appStore.loadSiteConfig()
@@ -32,7 +28,14 @@ onMounted(async () => {
   flex-direction: column;
 }
 
-#app-container > :nth-child(2) {
+/* 布局根占满剩余高度，保证页脚贴底（替代旧的 :nth-child(2) 规则，避免误命中 AIChatWidget 根节点） */
+#app-container > .layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.layout-main {
   flex: 1;
 }
 </style>

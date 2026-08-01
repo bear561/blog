@@ -1,8 +1,8 @@
 <template>
-  <div class="ai-chat-widget">
+  <div class="ai-chat-widget" :class="{ 'is-mobile': isMobile }">
     <!-- 浮动按钮: 安静的圆环 -->
     <transition name="fade-scale">
-      <div v-if="!aiStore.isOpen" class="chat-float-btn" @click="toggleChat" title="问答助手">
+      <div v-if="!aiStore.isOpen && !isMobile" class="chat-float-btn" @click="toggleChat" title="问答助手">
         <el-icon :size="20"><ChatDotRound /></el-icon>
       </div>
     </transition>
@@ -77,14 +77,16 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChatDotRound, Close, Delete, Promotion } from '@element-plus/icons-vue'
 import { useAiStore } from '@/stores/ai'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { useDeviceMode } from '@/composables/useDeviceMode'
 
 const aiStore = useAiStore()
+const { isMobile } = useDeviceMode()
 const router = useRouter()
 const inputText = ref('')
 const messagesContainer = ref(null)
@@ -154,6 +156,13 @@ watch(
   () => aiStore.messages.length,
   () => { scrollToBottom() }
 )
+
+// 移动端打开聊天时锁定背景滚动（桌面浮窗不锁，避免回归）
+watch(
+  [isMobile, () => aiStore.isOpen],
+  ([m, open]) => { document.body.style.overflow = (m && open) ? 'hidden' : '' }
+)
+onUnmounted(() => { document.body.style.overflow = '' })
 </script>
 
 <style scoped>
@@ -309,4 +318,19 @@ watch(
 .fade-scale-enter-from, .fade-scale-leave-to { opacity: 0; transform: scale(.8); }
 .slide-up-enter-active, .slide-up-leave-active { transition: all .3s ease; }
 .slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(20px); }
+
+/* ===== 移动端：根节点静态、面板全屏抽屉 ===== */
+/* 根节点 static → 关闭时无占位、无全屏透明层吞点击 */
+.ai-chat-widget.is-mobile { position: static; }
+.ai-chat-widget.is-mobile .chat-panel {
+  position: fixed; inset: 0;
+  width: auto; height: auto;
+  border-radius: 0; border: none;
+  z-index: 1500;
+}
+.ai-chat-widget.is-mobile .chat-header { padding: 14px 16px; }
+.ai-chat-widget.is-mobile .chat-messages { overscroll-behavior: contain; }
+.ai-chat-widget.is-mobile .message-content { max-width: 78%; }
+.ai-chat-widget.is-mobile .chat-message.assistant .message-content { max-width: 86%; }
+.ai-chat-widget.is-mobile .chat-input { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
 </style>

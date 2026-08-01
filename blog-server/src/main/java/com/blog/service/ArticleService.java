@@ -57,12 +57,48 @@ public class ArticleService {
     public PageResult<ArticleListVO> getArticleList(ArticleQueryDTO query) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
                 .eq(Article::getIsPublished, 1)
-                .orderByDesc(Article::getIsTop)
-                .orderByDesc(Article::getCreatedAt);
+                .orderByDesc(Article::getIsTop); // 置顶永远优先
 
-        if (query.getCategoryId() != null) {
-            wrapper.eq(Article::getCategoryId, query.getCategoryId());
+        // 次级排序：支持按 时间 / 阅读数 的 升/降序（默认时间倒序）。
+        // sortBy 走白名单（仅 viewCount 否则 createdAt），用方法引用，无注入风险。
+        boolean isAsc = "asc".equalsIgnoreCase(query.getOrder());
+        if ("viewCount".equalsIgnoreCase(query.getSortBy())) {
+            wrapper.orderBy(true, isAsc, Article::getViewCount);
+        } else {
+            wrapper.orderBy(true, isAsc, Article::getCreatedAt);
         }
+
+        // 分类过滤：优先用 id；否则按 slug 解析（slug 查不到回退 name）。
+        // 显式传了 slug 却解析不到 → 用 -1 哨兵，使结果为空（而非返回全部）。
+        Long categoryId = query.getCategoryId();
+        if (categoryId == null && StringUtils.hasText(query.getCategorySlug())) {
+            Category cat = categoryMapper.selectOne(new LambdaQueryWrapper<Category>()
+                    .eq(Category::getSlug, query.getCategorySlug()).last("LIMIT 1"));
+            if (cat == null) {
+                cat = categoryMapper.selectOne(new LambdaQueryWrapper<Category>()
+                        .eq(Category::getName, query.getCategorySlug()).last("LIMIT 1"));
+            }
+            categoryId = cat != null ? cat.getId() : -1L;
+        }
+        if (categoryId != null) {
+            wrapper.eq(Article::getCategoryId, categoryId);
+        }
+
+        // 标签过滤：优先用 id；否则按 slug 解析（slug 查不到回退 name）；查不到 → 空结果。
+        Long tagId = query.getTagId();
+        if (tagId == null && StringUtils.hasText(query.getTagSlug())) {
+            Tag tag = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
+                    .eq(Tag::getSlug, query.getTagSlug()).last("LIMIT 1"));
+            if (tag == null) {
+                tag = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
+                        .eq(Tag::getName, query.getTagSlug()).last("LIMIT 1"));
+            }
+            tagId = tag != null ? tag.getId() : -1L;
+        }
+        if (tagId != null) {
+            wrapper.exists("SELECT 1 FROM t_article_tag at WHERE at.article_id = t_article.id AND at.tag_id = " + tagId);
+        }
+
         if (query.getYear() != null) {
             wrapper.apply("YEAR(created_at) = {0}", query.getYear());
         }

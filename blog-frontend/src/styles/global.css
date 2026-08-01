@@ -25,6 +25,7 @@
   --radius-lg: 16px;
   --max-width: 1440px;
   --header-height: 60px;
+  --tabbar-h: 56px;
 
   /* 字体 */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -65,6 +66,9 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html { scroll-behavior: smooth; }
+
+/* 防止任何皮肤出现横向滚动（不用 overflow-x:hidden，避免破坏 sticky） */
+html, body { max-width: 100%; }
 
 body {
   font-family: var(--font-sans);

@@ -24,6 +24,10 @@ public class ArticleController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long tagId,
+            @RequestParam(required = false) String categorySlug,
+            @RequestParam(required = false) String tagSlug,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String order,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month) {
@@ -33,6 +37,10 @@ public class ArticleController {
         query.setSize(size);
         query.setCategoryId(categoryId);
         query.setTagId(tagId);
+        query.setCategorySlug(categorySlug);
+        query.setTagSlug(tagSlug);
+        query.setSortBy(sortBy);
+        query.setOrder(order);
         query.setKeyword(keyword);
         query.setYear(year);
         query.setMonth(month);

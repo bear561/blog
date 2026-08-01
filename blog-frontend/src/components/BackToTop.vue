@@ -1,6 +1,6 @@
 <template>
   <transition name="fade-up">
-    <div v-if="visible" class="back-to-top" @click="scrollTop" title="回到顶部">
+    <div v-if="visible" class="back-to-top" :style="{ bottom }" @click="scrollTop" title="回到顶部">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="18 15 12 9 6 15" />
@@ -11,6 +11,11 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+
+// 默认 88px 与历史像素一致；移动端由布局传入“TabBar + 安全区”高度，避免被底栏遮挡
+defineProps({
+  bottom: { type: String, default: '88px' }
+})
 
 const visible = ref(false)
 

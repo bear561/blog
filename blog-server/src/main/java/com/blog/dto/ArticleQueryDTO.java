@@ -13,6 +13,14 @@ public class ArticleQueryDTO {
 
     private Long tagId;
 
+    private String categorySlug;
+
+    private String tagSlug;
+
+    private String sortBy;
+
+    private String order;
+
     private String keyword;
 
     private Integer year;

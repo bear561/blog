@@ -16,6 +16,7 @@ export function getHot() {
   return http.get('/articles/hot')
 }
 
-export function searchArticles(keyword) {
-  return http.get('/articles/search', { params: { keyword } })
+export function searchArticles(keyword, extra = {}) {
+  // extra 供移动端分页使用；桌面调用点不传，请求与之前完全一致（向后兼容）
+  return http.get('/articles/search', { params: { keyword, ...extra } })
 }
