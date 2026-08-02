@@ -39,7 +39,7 @@
             <div class="message-avatar" v-if="msg.role === 'assistant'">
               <el-icon :size="20"><ChatDotRound /></el-icon>
             </div>
-            <div class="message-content" @click="onMessageClick">
+            <div class="message-content">
               <div class="message-text" v-html="renderMarkdown(msg.content)"></div>
               <div v-if="msg.role === 'assistant' && msg.content === '' && aiStore.isStreaming" class="typing-indicator">
                 <span></span><span></span><span></span>
@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChatDotRound, Close, Delete, Promotion } from '@element-plus/icons-vue'
 import { useAiStore } from '@/stores/ai'
@@ -90,6 +90,7 @@ const { isMobile } = useDeviceMode()
 const router = useRouter()
 const inputText = ref('')
 const messagesContainer = ref(null)
+let clickHandler = null
 
 const quickPrompts = [
   '这个博客是关于什么的？',
@@ -101,21 +102,68 @@ function onMessageClick(e) {
   const link = e.target.closest('a')
   if (!link) return
   const href = link.getAttribute('href')
+  console.log('点击链接，href:', href)
   if (!href) return
 
-  // 以当前页面为基准解析：根路径 /article/7、相对路径 article/7、
-  // 协议相对 //host/...、绝对 URL 都能正确判断是否同域
-  let url
-  try {
-    url = new URL(href, window.location.href)
-  } catch {
+  // 如果是带 target="_blank" 的链接，让浏览器默认打开新标签页
+  if (link.getAttribute('target') === '_blank') {
+    console.log('外链，允许浏览器默认行为')
     return
   }
-  // 只拦截同域链接走 SPA 路由——整页刷新会销毁 Pinia store，导致聊天上下文丢失；
-  // 真正的外链交给浏览器默认行为
-  if (url.origin !== window.location.origin) return
+
+  // 以站点根路径为基准解析 URL（不能用 window.location.href，
+  // 否则在 /article/7 页面点击相对链接 "article/8" 会解析成 /article/article/8）
+  let url
+  try {
+    url = new URL(href, window.location.origin)
+    console.log('URL解析成功:', url.toString())
+  } catch {
+    // 如果无法解析为 URL（例如相对路径），尝试用 location 处理
+    console.log('无法用 origin 解析，尝试用 location.href')
+    try {
+      url = new URL(href, window.location.href)
+      console.log('用 location 解析成功:', url.toString())
+    } catch {
+      console.log('URL 解析失败，href:', href)
+      return
+    }
+  }
+
+  // 外链：让浏览器默认行为（新标签页打开）
+  if (url.origin !== window.location.origin) {
+    console.log('外链，origin 不同，允许浏览器默认行为')
+    // 如果有 target="_blank"，已经返回了，这里让浏览器默认处理
+    return
+  }
+
   e.preventDefault()
-  router.push(url.pathname + url.search + url.hash)
+  console.log('阻止默认行为，准备跳转')
+
+  const targetPath = url.pathname + url.search + url.hash
+  console.log('目标路径:', targetPath)
+  console.log('当前设备:', isMobile.value ? '移动端' : '桌面端')
+  console.log('面板状态:', aiStore.isOpen)
+
+  // 移动端：先导航，再关闭面板
+  if (isMobile.value) {
+    console.log('移动端：先执行路由跳转')
+    router.push(targetPath).then(() => {
+      console.log('路由跳转成功，关闭面板')
+      // 等待路由切换完成、页面渲染完成后再关闭面板
+      setTimeout(() => {
+        aiStore.isOpen = false
+      }, 300)
+    }).catch((err) => {
+      console.error('路由跳转失败:', err)
+      // 跳转失败时也关闭面板
+      aiStore.isOpen = false
+    })
+  } else {
+    console.log('桌面端：直接导航')
+    router.push(targetPath).catch((err) => {
+      console.error('桌面端路由跳转失败:', err)
+    })
+  }
 }
 
 function renderMarkdown(text) {
@@ -162,7 +210,83 @@ watch(
   [isMobile, () => aiStore.isOpen],
   ([m, open]) => { document.body.style.overflow = (m && open) ? 'hidden' : '' }
 )
-onUnmounted(() => { document.body.style.overflow = '' })
+
+// 添加全局点击监听器
+onMounted(() => {
+  clickHandler = (e) => {
+    // 只在移动端且面板打开时监听链接点击
+    if (isMobile.value && aiStore.isOpen) {
+      const link = e.target.closest('a')
+      if (!link) return
+
+      const href = link.getAttribute('href')
+      if (!href) return
+
+      // 如果是带 target="_blank" 的链接，让浏览器默认打开新标签页
+      if (link.getAttribute('target') === '_blank') {
+        return
+      }
+
+      // 以站点根路径为基准解析 URL
+      let url
+      try {
+        url = new URL(href, window.location.origin)
+      } catch {
+        try {
+          url = new URL(href, window.location.href)
+        } catch {
+          return
+        }
+      }
+
+      // 外链：让浏览器默认行为
+      if (url.origin !== window.location.origin) {
+        return
+      }
+
+      e.preventDefault()
+      const targetPath = url.pathname + url.search + url.hash
+
+      // 移动端：先导航，再关闭面板
+      if (isMobile.value) {
+        router.push(targetPath).then(() => {
+          setTimeout(() => {
+            aiStore.isOpen = false
+          }, 300)
+        }).catch((err) => {
+          console.error('路由跳转失败:', err)
+          aiStore.isOpen = false
+        })
+      } else {
+        router.push(targetPath)
+      }
+    }
+  }
+
+  document.addEventListener('click', clickHandler, { passive: true })
+})
+
+onUnmounted(() => {
+  if (clickHandler) {
+    document.removeEventListener('click', clickHandler)
+  }
+})
+
+// 路由切换时关闭移动端聊天面板
+watch(
+  () => router.currentRoute.value,
+  () => {
+    if (isMobile.value && aiStore.isOpen) {
+      aiStore.isOpen = false
+    }
+  }
+)
+
+onUnmounted(() => {
+  document.body.style.overflow = ''
+  // 移除路由监听
+  router.afterEach = null
+})
 </script>
 
 <style scoped>
@@ -274,9 +398,16 @@ onUnmounted(() => { document.body.style.overflow = '' })
 /* 链接按钮 */
 .message-content :deep(a) {
   color: var(--primary); text-decoration: none; font-size: 12px;
-  display: inline-block; margin-top: 2px;
+  display: inline-block; margin-top: 2px; padding: 2px 6px;
+  border: 1px solid transparent; border-radius: 3px;
+  transition: all 0.2s;
+  cursor: pointer;
 }
-.message-content :deep(a:hover) { text-decoration: underline; }
+.message-content :deep(a:hover) {
+  text-decoration: underline;
+  background: var(--bg-warm);
+  border-color: var(--border);
+}
 
 .message-content :deep(p) { margin: 3px 0; }
 .message-content :deep(hr) { margin: 8px 0; border: none; border-top: 1px solid var(--border); }
@@ -323,14 +454,36 @@ onUnmounted(() => { document.body.style.overflow = '' })
 /* 根节点 static → 关闭时无占位、无全屏透明层吞点击 */
 .ai-chat-widget.is-mobile { position: static; }
 .ai-chat-widget.is-mobile .chat-panel {
-  position: fixed; inset: 0;
-  width: auto; height: auto;
-  border-radius: 0; border: none;
-  z-index: 1500;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  border: none;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  pointer-events: auto; /* 确保可以接收点击事件 */
 }
 .ai-chat-widget.is-mobile .chat-header { padding: 14px 16px; }
-.ai-chat-widget.is-mobile .chat-messages { overscroll-behavior: contain; }
+.ai-chat-widget.is-mobile .chat-messages { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 .ai-chat-widget.is-mobile .message-content { max-width: 78%; }
 .ai-chat-widget.is-mobile .chat-message.assistant .message-content { max-width: 86%; }
 .ai-chat-widget.is-mobile .chat-input { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+
+/* 移动端面板过渡 */
+.ai-chat-widget.is-mobile .chat-panel.slide-up-enter-active,
+.ai-chat-widget.is-mobile .chat-panel.slide-up-leave-active {
+  transition: transform 0.3s ease;
+}
+.ai-chat-widget.is-mobile .chat-panel.slide-up-enter-from {
+  transform: translateY(100%);
+}
+.ai-chat-widget.is-mobile .chat-panel.slide-up-leave-to {
+  transform: translateY(100%);
+}
 </style>

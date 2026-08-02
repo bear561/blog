@@ -6,9 +6,10 @@ export const useAppStore = defineStore('app', () => {
   const siteConfig = ref({})
   const loading = ref(false)
 
-  const siteName = computed(() => siteConfig.value.siteName || 'My Blog')
-  const siteDescription = computed(() => siteConfig.value.siteDescription || '')
+  const siteName = computed(() => siteConfig.value.site_name || siteConfig.value.siteName || 'My Blog')
+  const siteDescription = computed(() => siteConfig.value.site_description || siteConfig.value.siteDescription || '')
   const aboutContent = computed(() => siteConfig.value.about || '')
+  const avatar = computed(() => siteConfig.value.site_avatar || '')
 
   async function loadSiteConfig() {
     loading.value = true
@@ -28,6 +29,7 @@ export const useAppStore = defineStore('app', () => {
     siteName,
     siteDescription,
     aboutContent,
+    avatar,
     loadSiteConfig
   }
 })

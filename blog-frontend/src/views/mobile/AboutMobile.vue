@@ -3,7 +3,8 @@
     <MobileAppBar />
     <div class="m-about" v-if="!loading">
       <div class="m-about__hero">
-        <div class="m-about__av">{{ (config.site_name || 'B').trim().charAt(0) }}</div>
+        <img v-if="config.site_avatar" :src="config.site_avatar" class="m-about__av-img" alt="avatar" />
+        <div v-else class="m-about__av">{{ (config.site_name || 'B').trim().charAt(0) }}</div>
         <h1 class="m-about__name">{{ config.site_name || 'Blog' }}</h1>
         <p class="m-about__desc" v-if="config.site_description">{{ config.site_description }}</p>
       </div>
@@ -68,6 +69,9 @@ onMounted(async () => {
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-family: var(--font-serif); font-size: 26px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
+}
+.m-about__av-img {
+  width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 12px; object-fit: cover; display: block;
 }
 .m-about__name { font-family: var(--font-serif); font-size: 22px; font-weight: 700; color: var(--text); }
 .m-about__desc { margin-top: 6px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }

@@ -3,7 +3,7 @@
     <aside class="about-sidebar">
       <!-- 作者卡片 -->
       <div class="author-card">
-        <el-avatar :size="64" class="author-avatar">
+        <el-avatar :size="64" class="author-avatar" :src="config.site_avatar">
           <el-icon :size="30"><UserFilled /></el-icon>
         </el-avatar>
         <h2 class="author-name">{{ config.site_name || '博主' }}</h2>

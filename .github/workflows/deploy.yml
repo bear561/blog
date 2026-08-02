@@ -1,0 +1,72 @@
+name: Deploy Blog System
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions
+          chmod 600 ~/.ssh/github_actions
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_DIR: /var/www/blog
+          SSH_KEY: ~/.ssh/github_actions
+        run: |
+          echo "开始部署到服务器..."
+
+          # 拉取最新代码
+          ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR} && git pull origin main"
+
+          # 构建前端
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR}/blog-frontend && docker build -t blog-frontend:latest ."
+
+          # 构建后台
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR}/blog-admin && docker build -t blog-admin:latest ."
+
+          # 构建后端
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR}/blog-server && docker build -t blog-server:latest ."
+
+          # 停止旧容器
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR} && docker-compose down"
+
+          # 启动新容器
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR} && docker-compose up -d"
+
+          # 重启服务
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR} && docker-compose restart server"
+
+          # 清理旧镜像
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "cd ${DEPLOY_DIR} && docker image prune -f"
+
+          echo "部署完成！"
+
+      - name: Verify deployment
+        run: |
+          echo "验证部署状态..."
+          sleep 10
+          curl -f ${{ secrets.SERVER_HOST }} || exit 1
+          echo "验证成功！"

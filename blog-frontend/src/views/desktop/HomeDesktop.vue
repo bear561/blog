@@ -4,7 +4,7 @@
       <!-- 侧边栏: 类似杂志目录 -->
       <aside class="sidebar">
         <div class="author-card">
-          <el-avatar :size="48" class="author-avatar">
+          <el-avatar :size="48" class="author-avatar" :src="siteAvatar">
             <el-icon :size="22"><UserFilled /></el-icon>
           </el-avatar>
           <div class="author-text">
@@ -123,6 +123,7 @@ const pageSize = ref(12)
 const total = ref(0)
 const siteName = ref('')
 const siteDesc = ref('')
+const siteAvatar = ref('')
 
 const heroArticle = computed(() => articles.value.length > 0 ? articles.value[0] : null)
 const heroReadMin = computed(() => {
@@ -137,7 +138,7 @@ onMounted(async () => {
   fetchArticles()
   getCategories().then(r => categories.value = r.data || []).catch(() => {})
   getTags().then(r => tags.value = r.data || []).catch(() => {})
-  getSiteConfig().then(r => { const c = r.data || {}; siteName.value = c.site_name || ''; siteDesc.value = c.site_description || '' }).catch(() => {})
+  getSiteConfig().then(r => { const c = r.data || {}; siteName.value = c.site_name || ''; siteDesc.value = c.site_description || ''; siteAvatar.value = c.site_avatar || '' }).catch(() => {})
 })
 
 async function fetchArticles() {

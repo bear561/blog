@@ -79,8 +79,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a { color: var(--primary); text-decoration: none; transition: color .2s; }
-a:hover { color: var(--primary-dark); }
+a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+a:hover {
+  color: var(--primary-dark);
+  text-decoration-color: var(--primary);
+}
 img { max-width: 100%; height: auto; }
 
 .container {

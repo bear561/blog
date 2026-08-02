@@ -12,7 +12,8 @@
     <div class="m-home__disc">
       <DailyQuote />
       <section class="m-disc m-aboutcard" v-if="siteName || siteDesc">
-        <div class="m-aboutcard__av">{{ (siteName || 'B').trim().charAt(0) }}</div>
+        <img v-if="siteAvatar" :src="siteAvatar" class="m-aboutcard__av-img" alt="avatar" />
+        <div v-else class="m-aboutcard__av">{{ (siteName || 'B').trim().charAt(0) }}</div>
         <div class="m-aboutcard__txt">
           <h4 class="m-aboutcard__name">{{ siteName || 'Blog' }}</h4>
           <p class="m-aboutcard__desc" v-if="siteDesc">{{ siteDesc }}</p>
@@ -122,6 +123,7 @@ const categories = ref([])
 const tags = ref([])
 const siteName = ref('')
 const siteDesc = ref('')
+const siteAvatar = ref('')
 const page = ref(1)
 const total = ref(0)
 const exhausted = ref(false)
@@ -191,6 +193,7 @@ onMounted(() => {
     const c = r.data || {}
     siteName.value = c.site_name || ''
     siteDesc.value = c.site_description || ''
+    siteAvatar.value = c.site_avatar || ''
   }).catch(() => {})
 })
 </script>
@@ -204,6 +207,9 @@ onMounted(() => {
   background: linear-gradient(135deg, var(--primary), var(--primary-light));
   color: #fff; font-family: var(--font-serif); font-weight: 700; font-size: 18px;
   display: flex; align-items: center; justify-content: center;
+}
+.m-aboutcard__av-img {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; object-fit: cover;
 }
 .m-aboutcard__txt { min-width: 0; }
 .m-aboutcard__name { font-size: 14px; font-weight: 600; color: var(--text); }

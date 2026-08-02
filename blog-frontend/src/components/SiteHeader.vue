@@ -1,7 +1,10 @@
 <template>
   <header class="site-header" :class="{ scrolled: isScrolled }">
     <div class="header-inner">
-      <router-link to="/" class="logo">{{ appStore.siteName }}</router-link>
+      <router-link to="/" class="logo">
+        <el-avatar v-if="appStore.avatar" :size="28" :src="appStore.avatar" class="logo-avatar" />
+        {{ appStore.siteName }}
+      </router-link>
 
       <nav class="nav">
         <router-link to="/" class="nav-link" exact-active-class="active">首页</router-link>
@@ -79,7 +82,9 @@ function handleSearch() {
   font-size: 18px; font-weight: 700; color: var(--text);
   letter-spacing: -.3px; white-space: nowrap;
   font-family: var(--font-serif);
+  display: flex; align-items: center; gap: 8px;
 }
+.logo-avatar { flex-shrink: 0; }
 .logo:hover { color: var(--primary); }
 
 .nav { display: flex; gap: 0; }
