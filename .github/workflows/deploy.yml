@@ -77,10 +77,12 @@ jobs:
         run: |
           echo "检查 Git 仓库配置..."
 
-          # 检查是否是 git 仓库
+          NEED_CLONE=false
+
+          # 检查是否是有效的 git 仓库（有 .git 且有 origin remote）
           if ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "cd ${DEPLOY_DIR} && git rev-parse --git-dir 2>/dev/null"; then
-            echo "✅ 已是 git 仓库，强制同步到最新"
+            "cd ${DEPLOY_DIR} && git rev-parse --git-dir 2>/dev/null && git remote get-url origin 2>/dev/null"; then
+            echo "✅ 有效 git 仓库，强制同步到最新"
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
               "cd ${DEPLOY_DIR} && \
                git fetch origin main && \
@@ -88,11 +90,14 @@ jobs:
                git clean -fd"
             echo "✅ Git 同步完成"
           else
-            echo "❌ 不是 git 仓库，需要重新克隆"
+            echo "⚠️ 仓库不完整或缺少 origin remote，重新克隆..."
+            NEED_CLONE=true
+          fi
+
+          if [ "$NEED_CLONE" = true ]; then
             echo "移除旧目录并从 GitHub clone..."
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
               "rm -rf ${DEPLOY_DIR} || true"
-
             # 克隆项目（用 GitHub Token 走 HTTPS，避免服务器没配 SSH key）
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
               "git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git ${DEPLOY_DIR}"
