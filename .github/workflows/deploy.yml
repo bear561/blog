@@ -29,6 +29,14 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions
           chmod 600 ~/.ssh/github_actions
+          # 配置 SSH keepalive，防止长时间 docker build 时断连
+          cat >> ~/.ssh/config << 'EOF'
+          Host *
+              ServerAliveInterval 60
+              ServerAliveCountMax 5
+              TCPKeepAlive yes
+              StrictHostKeyChecking no
+          EOF
           echo "SSH key 已配置"
 
       - name: Test SSH connection
