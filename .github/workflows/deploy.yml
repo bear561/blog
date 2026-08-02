@@ -122,38 +122,54 @@ jobs:
              ls -la ${DEPLOY_DIR}/blog-server/Dockerfile && \
              echo '✅ 所有 Dockerfile 就绪'"
 
-      - name: Build frontend
+      - name: Build all Docker images
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           DEPLOY_DIR: /var/www/blog
           SSH_KEY: ~/.ssh/github_actions
         run: |
-          echo "构建前端..."
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "cd ${DEPLOY_DIR}/blog-frontend && docker build -t blog-frontend:latest ."
+          build_image() {
+            local NAME=$1
+            local DIR=$2
+            local LOG="/tmp/docker-build-${NAME}.log"
 
-      - name: Build admin
-        env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          DEPLOY_DIR: /var/www/blog
-          SSH_KEY: ~/.ssh/github_actions
-        run: |
-          echo "构建后台..."
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "cd ${DEPLOY_DIR}/blog-admin && docker build -t blog-admin:latest ."
+            echo "启动 ${NAME} 构建（后台运行）..."
+            # 在服务器端用 nohup 后台构建，不依赖 SSH 长连接
+            ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+              "nohup docker build -t blog-${NAME}:latest ${DEPLOY_DIR}/${DIR} > ${LOG} 2>&1 &"
 
-      - name: Build server
-        env:
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          DEPLOY_DIR: /var/www/blog
-          SSH_KEY: ~/.ssh/github_actions
-        run: |
-          echo "构建后端..."
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "cd ${DEPLOY_DIR}/blog-server && docker build -t blog-server:latest ."
+            echo "等待 ${NAME} 构建完成..."
+            for i in $(seq 1 180); do
+              sleep 10
+              if ! ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+                "pgrep -f 'docker build.*blog-${NAME}' > /dev/null 2>&1"; then
+                echo "${NAME} 构建进程已结束"
+                break
+              fi
+              if [ $((i % 6)) -eq 0 ]; then
+                echo "  ${NAME} 构建中... $((i * 10))秒"
+              fi
+            done
+
+            echo "--- ${NAME} 构建日志（最后30行） ---"
+            ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "tail -30 ${LOG}"
+            echo "--- 日志结束 ---"
+
+            # 验证镜像是否构建成功
+            if ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+              "docker image inspect blog-${NAME}:latest > /dev/null 2>&1"; then
+              echo "✅ ${NAME} 构建成功！"
+            else
+              echo "❌ ${NAME} 构建失败！查看完整日志:"
+              ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "cat ${LOG}"
+              exit 1
+            fi
+          }
+
+          build_image "frontend" "blog-frontend"
+          build_image "admin" "blog-admin"
+          build_image "server" "blog-server"
 
       - name: Stop old containers
         env:
