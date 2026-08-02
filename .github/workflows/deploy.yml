@@ -43,6 +43,29 @@ jobs:
             }} \
             "echo 'SSH 连接成功' && hostname && date"
 
+      - name: Create directories
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_DIR: /var/www/blog
+          SSH_KEY: ~/.ssh/github_actions
+        run: |
+          echo "创建必要目录..."
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "mkdir -p ${DEPLOY_DIR} && \
+             mkdir -p ${DEPLOY_DIR}/blog-frontend && \
+             mkdir -p ${DEPLOY_DIR}/blog-admin && \
+             mkdir -p ${DEPLOY_DIR}/blog-server && \
+             mkdir -p ${DEPLOY_DIR}/docker/mysql && \
+             mkdir -p ${DEPLOY_DIR}/docker/nginx && \
+             mkdir -p ${DEPLOY_DIR}/.github/workflows && \
+             mkdir -p /var/lib/blog && \
+             mkdir -p /var/lib/blog/mysql && \
+             mkdir -p /var/lib/blog/redis && \
+             mkdir -p /var/lib/blog/uploads && \
+             mkdir -p /var/log/blog"
+          echo "✅ 目录创建完成"
+
       - name: Check and setup git repository
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}

@@ -29,15 +29,32 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 1. 构建项目
+# 1. 创建必要目录
+log_info "创建必要目录..."
+ssh -i "$SSH_KEY" ${SERVER_USER}@${SERVER_HOST} \
+  "mkdir -p $DEPLOY_DIR && \
+   mkdir -p $DEPLOY_DIR/blog-frontend && \
+   mkdir -p $DEPLOY_DIR/blog-admin && \
+   mkdir -p $DEPLOY_DIR/blog-server && \
+   mkdir -p $DEPLOY_DIR/docker/mysql && \
+   mkdir -p $DEPLOY_DIR/docker/nginx && \
+   mkdir -p $DEPLOY_DIR/.github/workflows && \
+   mkdir -p /var/lib/blog && \
+   mkdir -p /var/lib/blog/mysql && \
+   mkdir -p /var/lib/blog/redis && \
+   mkdir -p /var/lib/blog/uploads && \
+   mkdir -p /var/log/blog"
+log_success "目录创建完成"
+
+# 2. 构建项目
 log_info "正在构建前端和后台..."
 docker-compose build
 
-# 2. 检查 SSH 连接
+# 3. 检查 SSH 连接
 log_info "检查服务器连接..."
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ${SERVER_USER}@${SERVER_HOST} "echo '连接成功'"
 
-# 3. 拉取最新代码
+# 4. 拉取最新代码
 log_info "拉取最新代码..."
 ssh -i "$SSH_KEY" ${SERVER_USER}@${SERVER_HOST} "cd $DEPLOY_DIR && git pull origin main"
 
