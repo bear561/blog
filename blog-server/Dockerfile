@@ -1,12 +1,14 @@
-# Step 1: Build JAR on host machine first
-#   cd blog-server && mvn package -DskipTests
-#
-# Step 2: Build Docker image
-#   docker build -t blog-server .
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /app
+COPY pom.xml .
+# 先下载依赖（利用 Docker 缓存层）
+RUN mvn dependency:go-offline -B -DskipTests
+COPY src ./src
+RUN mvn package -DskipTests -B
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
-COPY target/*.jar app.jar
+COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p /app/uploads
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
