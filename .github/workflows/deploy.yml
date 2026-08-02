@@ -80,11 +80,15 @@ jobs:
           # 检查是否是 git 仓库
           if ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
             "cd ${DEPLOY_DIR} && git rev-parse --git-dir 2>/dev/null"; then
-            echo "✅ 已是 git 仓库，执行 git pull"
+            echo "✅ 已是 git 仓库，强制同步到最新"
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "cd ${DEPLOY_DIR} && git pull origin main || echo 'Git pull 失败，尝试强制同步'"
+              "cd ${DEPLOY_DIR} && \
+               git fetch origin main && \
+               git reset --hard origin/main && \
+               git clean -fd"
+            echo "✅ Git 同步完成"
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "cd ${DEPLOY_DIR} && git status"
+              "cd ${DEPLOY_DIR} && git log --oneline -3"
           else
             echo "❌ 不是 git 仓库，需要重新克隆"
             echo "移除旧目录并从 GitHub clone..."
@@ -95,7 +99,7 @@ jobs:
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
               "git clone git@github.com:${GITHUB_REPO}.git ${DEPLOY_DIR}"
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "cd ${DEPLOY_DIR} && git status"
+              "cd ${DEPLOY_DIR} && git log --oneline -3"
           fi
 
       - name: Build frontend
