@@ -87,20 +87,27 @@ jobs:
                git reset --hard origin/main && \
                git clean -fd"
             echo "✅ Git 同步完成"
-            ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "cd ${DEPLOY_DIR} && git log --oneline -3"
           else
             echo "❌ 不是 git 仓库，需要重新克隆"
             echo "移除旧目录并从 GitHub clone..."
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
               "rm -rf ${DEPLOY_DIR} || true"
 
-            # 克隆项目
+            # 克隆项目（用 GitHub Token 走 HTTPS，避免服务器没配 SSH key）
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "git clone git@github.com:${GITHUB_REPO}.git ${DEPLOY_DIR}"
-            ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "cd ${DEPLOY_DIR} && git log --oneline -3"
+              "git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git ${DEPLOY_DIR}"
           fi
+
+          # 验证关键文件存在
+          echo "验证项目文件..."
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "echo 'Git log:' && cd ${DEPLOY_DIR} && git log --oneline -3 && \
+             echo '' && \
+             echo 'Dockerfile check:' && \
+             ls -la ${DEPLOY_DIR}/blog-frontend/Dockerfile && \
+             ls -la ${DEPLOY_DIR}/blog-admin/Dockerfile && \
+             ls -la ${DEPLOY_DIR}/blog-server/Dockerfile && \
+             echo '✅ 所有 Dockerfile 就绪'"
 
       - name: Build frontend
         env:
