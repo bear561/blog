@@ -282,14 +282,38 @@ jobs:
           SSH_KEY: ~/.ssh/github_actions
         run: |
           echo "停止并清理旧容器..."
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "cd ${DEPLOY_DIR} && \
-             docker-compose down --remove-orphans --timeout 30 2>&1 || true; \
-             echo '---'; \
-             echo '强制清理所有 blog 相关容器...'; \
-             docker stop blog-redis blog-mysql blog-server blog-nginx 2>/dev/null || true; \
-             docker rm -f blog-redis blog-mysql blog-server blog-nginx 2>/dev/null || true; \
-             echo '✅ 清理完成'"
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} << 'REMOTE_CLEANUP'
+            set -e
+            cd /var/www/blog
+
+            echo "1. docker-compose down..."
+            docker-compose down --remove-orphans --timeout 30 2>&1 || true
+
+            echo "2. 强制删除所有 blog-* 容器（不管状态）..."
+            CONTAINERS=$(docker ps -a --filter "name=blog-" -q)
+            if [ -n "$CONTAINERS" ]; then
+              echo "  发现容器: $CONTAINERS"
+              docker rm -f $CONTAINERS && echo "  已删除"
+            else
+              echo "  无残留容器"
+            fi
+
+            echo "3. 检查端口占用..."
+            if ss -tlnp | grep -q ':6379'; then
+              echo "  ⚠️ 6379 端口仍被占用:"
+              ss -tlnp | grep ':6379'
+              echo "  尝试释放..."
+              fuser -k 6379/tcp 2>/dev/null || true
+            fi
+            if ss -tlnp | grep -q ':3306'; then
+              echo "  ⚠️ 3306 端口仍被占用:"
+              ss -tlnp | grep ':3306'
+              echo "  尝试释放..."
+              fuser -k 3306/tcp 2>/dev/null || true
+            fi
+
+            echo "✅ 清理完成"
+          REMOTE_CLEANUP
 
       - name: Start new containers
         env:
