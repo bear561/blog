@@ -298,19 +298,16 @@ jobs:
               echo "  无残留容器"
             fi
 
-            echo "3. 检查端口占用..."
-            if ss -tlnp | grep -q ':6379'; then
-              echo "  ⚠️ 6379 端口仍被占用:"
-              ss -tlnp | grep ':6379'
-              echo "  尝试释放..."
-              fuser -k 6379/tcp 2>/dev/null || true
-            fi
-            if ss -tlnp | grep -q ':3306'; then
-              echo "  ⚠️ 3306 端口仍被占用:"
-              ss -tlnp | grep ':3306'
-              echo "  尝试释放..."
-              fuser -k 3306/tcp 2>/dev/null || true
-            fi
+            echo "3. 检查并释放端口 (80/3306/6379)..."
+            for port in 80 3306 6379; do
+              if ss -tlnp | grep -q ":${port} "; then
+                echo "  ⚠️ ${port} 端口仍被占用:"
+                ss -tlnp | grep ":${port} "
+                echo "  释放中..."
+                fuser -k ${port}/tcp 2>/dev/null || true
+                sleep 1
+              fi
+            done
 
             echo "✅ 清理完成"
           REMOTE_CLEANUP
