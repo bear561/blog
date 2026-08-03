@@ -225,7 +225,9 @@ jobs:
             fi
 
             echo "🔨 需要重建 ${NAME}..."
-            ssh_retry "nohup docker build -t blog-${NAME}:latest ${DEPLOY_DIR}/${DIR} > ${LOG} 2>&1 &"
+            # 先删除旧镜像，确保不会复用缓存层
+            ssh_retry "docker rmi blog-${NAME}:latest 2>/dev/null || true"
+            ssh_retry "nohup docker build --no-cache -t blog-${NAME}:latest ${DEPLOY_DIR}/${DIR} > ${LOG} 2>&1 &"
 
             echo "等待 ${NAME} 构建完成..."
             local prev_size=0
