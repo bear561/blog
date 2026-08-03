@@ -303,38 +303,19 @@ jobs:
               fi
             }
 
-            # 注意: 单引号 heredoc 不会展开 ${DEPLOY_DIR}，用相对路径
+            # 注意: 单引号 heredoc 不会展开变量，用相对路径
             extract_dist "blog-frontend:latest" "blog-frontend/dist"
             extract_dist "blog-admin:latest" "blog-admin/dist"
 
-            echo "验证文件:"
-            echo "=== blog-frontend/dist ==="
-            ls -la blog-frontend/dist/ 2>&1 || echo "目录不存在或为空"
-            echo ""
-            echo "=== blog-admin/dist ==="
-            ls -la blog-admin/dist/ 2>&1 || echo "目录不存在或为空"
-            echo ""
-            echo "=== Docker 镜像内文件（frontend） ==="
-            CID=$(docker create blog-frontend:latest 2>/dev/null)
-            if [ -n "$CID" ]; then
-              docker run --rm blog-frontend:latest ls -la /usr/share/nginx/html/ 2>&1 || true
-              docker rm "$CID" 2>/dev/null || true
-            fi
-            echo ""
-            echo "=== Docker 镜像内文件（admin） ==="
-            CID=$(docker create blog-admin:latest 2>/dev/null)
-            if [ -n "$CID" ]; then
-              docker run --rm blog-admin:latest ls -la /usr/share/nginx/html/ 2>&1 || true
-              docker rm "$CID" 2>/dev/null || true
-            fi
-
-            if ls blog-frontend/dist/index.html >/dev/null 2>&1 && ls blog-admin/dist/index.html >/dev/null 2>&1; then
-              echo "✅ dist 文件就绪"
+            # 快速验证
+            if ls blog-frontend/dist/index.html >/dev/null 2>&1 && \
+               ls blog-admin/dist/index.html >/dev/null 2>&1; then
+              echo "✅ dist 文件提取成功"
             else
-              echo "⚠️ index.html 缺失，详情见上方 ls 输出"
+              echo "❌ index.html 缺失！"
+              ls -la blog-frontend/dist/ blog-admin/dist/ 2>&1
+              exit 1
             fi
-
-            echo "✅ 静态文件提取完成"
           EXTRACT
 
       - name: Stop old containers
@@ -425,52 +406,57 @@ jobs:
           SSH_KEY: ~/.ssh/github_actions
         run: |
           echo "验证部署状态..."
-
-          # 等待服务启动（Spring Boot 可能需要较长时间）
-          echo "等待服务就绪..."
-          sleep 15
-
-          # 通过 SSH 在服务器本地验证，绕过防火墙
           echo ""
-          echo "=== 容器状态 ==="
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" || true
 
+          # 带重试的轮询验证（Spring Boot 启动可能需要 30-60 秒）
+          PASS=false
+          for round in 1 2 3 4 5 6; do
+            echo "--- 第 ${round} 轮检测 (等待 10s) ---"
+            sleep 10
+
+            # 一次 SSH 完成所有检测
+            RESULT=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "
+              FE=\$(curl -sS -o /dev/null -w '%{http_code}' http://localhost/ 2>/dev/null || echo '000')
+              AD=\$(curl -sS -o /dev/null -w '%{http_code}' http://localhost/admin/ 2>/dev/null || echo '000')
+              echo \"frontend=\${FE} admin=\${AD}\"
+            " 2>/dev/null || echo "frontend=SSH_FAIL admin=SSH_FAIL")
+
+            echo "  ${RESULT}"
+
+            FE=$(echo "$RESULT" | grep -oP 'frontend=\K\S+')
+            AD=$(echo "$RESULT" | grep -oP 'admin=\K\S+')
+
+            if [ "$FE" = "200" ] && [ "$AD" = "200" ]; then
+              echo ""
+              echo "✅ 前端和后台均返回 200，部署成功！"
+              PASS=true
+              break
+            elif [ "$FE" = "000" ] || [ "$FE" = "SSH_FAIL" ]; then
+              echo "  ⚠️ nginx 尚未就绪，继续等待..."
+            else
+              echo "  ⚠️ 前端 HTTP ${FE}, 后台 HTTP ${AD}，继续等待..."
+            fi
+          done
+
+          if [ "$PASS" = true ]; then
+            exit 0
+          fi
+
+          # 最终诊断
           echo ""
-          echo "=== 本地 HTTP 检测 ==="
+          echo "=== 超时未通过，输出诊断信息 ==="
+          echo ""
           ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "
-            echo '1. 测试前端:'
-            curl -sS -o /dev/null -w '   HTTP %{http_code} (size: %{size_download} bytes)\n' http://localhost/ 2>&1 || echo '   ❌ 连接失败'
-
-            echo '2. 测试后台:'
-            curl -sS -o /dev/null -w '   HTTP %{http_code} (size: %{size_download} bytes)\n' http://localhost/admin/ 2>&1 || echo '   ❌ 连接失败'
-
-            echo '3. 测试 API:'
-            curl -sS -o /dev/null -w '   HTTP %{http_code}\n' http://localhost/api/ 2>&1 || echo '   ❌ 连接失败'
+            echo '容器状态:'
+            docker ps --format 'table {{.Names}}\t{{.Status}}'
+            echo ''
+            echo 'Nginx 最近日志:'
+            docker logs blog-nginx --tail 15 2>&1 || true
+            echo ''
+            echo 'Server 最近日志:'
+            docker logs blog-server --tail 15 2>&1 || true
           " || true
 
-          # 检查 nginx 错误日志
           echo ""
-          echo "=== Nginx 最近错误 ==="
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "docker logs blog-nginx --tail 20 2>&1 || echo '无法获取 nginx 日志'" || true
-
-          # 检查服务器错误日志
-          echo ""
-          echo "=== Server 最近日志 ==="
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "docker logs blog-server --tail 10 2>&1 || echo '无法获取 server 日志'" || true
-
-          # 判断部署是否成功
-          echo ""
-          local_ok=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "curl -sS -o /dev/null -w '%{http_code}' http://localhost/ 2>/dev/null || echo '000'")
-
-          if [ "$local_ok" = "200" ]; then
-            echo "✅ 部署验证成功！(localhost:80 → HTTP 200)"
-          elif [ "$local_ok" = "000" ]; then
-            echo "❌ nginx 未响应，可能容器启动失败"
-            exit 1
-          else
-            echo "⚠️ nginx 返回 HTTP ${local_ok}，需进一步排查"
-            exit 1
-          fi
+          echo "❌ 部署验证超时，请查看上方诊断信息"
+          exit 1
