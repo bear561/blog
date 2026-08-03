@@ -5,6 +5,17 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      skip_build:
+        description: '跳过 Docker 镜像构建（直接用服务器上已有的镜像）'
+        type: boolean
+        default: false
+        required: false
+      skip_git_sync:
+        description: '跳过 Git 代码同步'
+        type: boolean
+        default: false
+        required: false
 
 jobs:
   build-and-deploy:
@@ -79,6 +90,7 @@ jobs:
           echo "✅ 目录创建完成"
 
       - name: Check and setup git repository
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.skip_git_sync }}
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
@@ -127,6 +139,7 @@ jobs:
              echo '✅ 所有 Dockerfile 就绪'"
 
       - name: Build all Docker images
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.skip_build }}
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
