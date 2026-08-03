@@ -303,8 +303,9 @@ jobs:
               fi
             }
 
-            extract_dist "blog-frontend:latest" "${DEPLOY_DIR}/blog-frontend/dist"
-            extract_dist "blog-admin:latest" "${DEPLOY_DIR}/blog-admin/dist"
+            # 注意: 单引号 heredoc 不会展开 ${DEPLOY_DIR}，用相对路径
+            extract_dist "blog-frontend:latest" "blog-frontend/dist"
+            extract_dist "blog-admin:latest" "blog-admin/dist"
 
             echo "验证文件:"
             ls -la blog-frontend/dist/index.html blog-admin/dist/index.html 2>/dev/null && echo "✅ dist 文件就绪" || echo "⚠️ index.html 缺失"
