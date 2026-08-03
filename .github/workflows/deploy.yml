@@ -26,16 +26,20 @@ jobs:
 
       - name: Setup SSH key
         run: |
-          mkdir -p ~/.ssh
+          mkdir -p ~/.ssh ~/.ssh/controlmasters
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions
           chmod 600 ~/.ssh/github_actions
-          # 配置 SSH keepalive，防止长时间 docker build 时断连
+          # 配置 SSH keepalive + 连接复用，避免频繁建连被服务器拒绝
           cat >> ~/.ssh/config << 'EOF'
           Host *
               ServerAliveInterval 60
               ServerAliveCountMax 5
               TCPKeepAlive yes
               StrictHostKeyChecking no
+              ControlMaster auto
+              ControlPath ~/.ssh/controlmasters/%r@%h:%p
+              ControlPersist 10m
+              ConnectionAttempts 3
           EOF
           echo "SSH key 已配置"
 
@@ -129,40 +133,70 @@ jobs:
           DEPLOY_DIR: /var/www/blog
           SSH_KEY: ~/.ssh/github_actions
         run: |
+          # SSH 重试包装函数（应对偶发断连）
+          ssh_retry() {
+            local max=3
+            for attempt in $(seq 1 $max); do
+              if ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "$@"; then
+                return 0
+              fi
+              echo "  ⚠️ SSH 命令失败 (尝试 $attempt/$max)，等待重试..."
+              sleep 5
+            done
+            return 1
+          }
+
           build_image() {
             local NAME=$1
             local DIR=$2
             local LOG="/tmp/docker-build-${NAME}.log"
 
+            echo "========================================="
             echo "启动 ${NAME} 构建（后台运行）..."
-            # 在服务器端用 nohup 后台构建，不依赖 SSH 长连接
-            ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "nohup docker build -t blog-${NAME}:latest ${DEPLOY_DIR}/${DIR} > ${LOG} 2>&1 &"
+            ssh_retry "nohup docker build -t blog-${NAME}:latest ${DEPLOY_DIR}/${DIR} > ${LOG} 2>&1 &"
 
             echo "等待 ${NAME} 构建完成..."
-            for i in $(seq 1 180); do
-              sleep 10
-              if ! ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-                "pgrep -f 'docker build.*blog-${NAME}' > /dev/null 2>&1"; then
-                echo "${NAME} 构建进程已结束"
+            local prev_size=0
+            for i in $(seq 1 120); do
+              sleep 15
+              # 一次 SSH 连接同时检查进程 + 看日志进度
+              local result
+              result=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+                "pgrep -f 'docker build.*blog-${NAME}' > /dev/null 2>&1 && echo 'BUILDING' || echo 'DONE'; wc -l < ${LOG} 2>/dev/null || echo 0" 2>/dev/null || echo "SSH_FAIL")
+
+              local status=$(echo "$result" | head -1)
+              local cur_size=$(echo "$result" | tail -1)
+
+              if [ "$status" = "DONE" ]; then
+                echo "  ${NAME} 构建进程已结束"
                 break
               fi
-              if [ $((i % 6)) -eq 0 ]; then
-                echo "  ${NAME} 构建中... $((i * 10))秒"
+              if [ "$status" = "SSH_FAIL" ]; then
+                echo "  ⚠️ SSH 轮询暂时失败，继续等待..."
+              elif [ "$cur_size" -gt "$prev_size" ]; then
+                prev_size=$cur_size
+                echo "  ${NAME} 构建中... $((i * 15))秒 (日志 ${cur_size} 行)"
               fi
             done
 
-            echo "--- ${NAME} 构建日志（最后30行） ---"
-            ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "tail -30 ${LOG}"
+            # 一次性获取：构建日志最后部分 + 检查是否成功
+            echo "--- ${NAME} 构建日志（最后40行） ---"
+            local check_result
+            check_result=$(ssh_retry "tail -40 ${LOG} 2>/dev/null; echo '---SPLIT---'; grep -q 'Successfully built' ${LOG} 2>/dev/null && echo 'BUILD_OK' || echo 'BUILD_FAIL'; docker image inspect blog-${NAME}:latest > /dev/null 2>&1 && echo 'IMAGE_OK' || echo 'IMAGE_MISSING'" || echo "SSH_FAILED")
+
+            # 显示日志部分
+            echo "$check_result" | sed '/---SPLIT---/,$d' || echo "$check_result"
             echo "--- 日志结束 ---"
 
-            # 验证镜像是否构建成功
-            if ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "docker image inspect blog-${NAME}:latest > /dev/null 2>&1"; then
-              echo "✅ ${NAME} 构建成功！"
+            # 检查结果
+            if echo "$check_result" | grep -q 'BUILD_OK'; then
+              echo "✅ ${NAME} 构建成功！(log check: BUILD_OK)"
+            elif echo "$check_result" | grep -q 'IMAGE_OK'; then
+              echo "✅ ${NAME} 构建成功！(image exists)"
             else
-              echo "❌ ${NAME} 构建失败！查看完整日志:"
-              ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "cat ${LOG}"
+              echo "❌ ${NAME} 构建失败！"
+              echo "完整日志:"
+              ssh_retry "cat ${LOG}" || true
               exit 1
             fi
           }
