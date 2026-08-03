@@ -173,20 +173,64 @@ jobs:
             return 1
           }
 
+          # 检查某个目录下的源码是否相比上次构建有变化
+          need_rebuild() {
+            local DIR=$1
+            local MARKER="/tmp/.docker-build-${DIR}.commit"
+            local CURRENT
+            CURRENT=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+              "cd ${DEPLOY_DIR} && git rev-parse HEAD" 2>/dev/null || echo "unknown")
+            local LAST
+            LAST=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+              "cat ${MARKER} 2>/dev/null || echo 'none'")
+            if [ "$LAST" = "$CURRENT" ]; then
+              return 1  # 无变化，不需要重建
+            fi
+            # 检查具体目录是否有变更
+            local diff
+            diff=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+              "cd ${DEPLOY_DIR} && git diff --name-only ${LAST} HEAD -- ${DIR} 2>/dev/null | head -1 || echo 'CHANGED'")
+            if [ -z "$diff" ]; then
+              echo "  ⏭️ ${DIR} 源码无变化，跳过构建"
+              ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "echo ${CURRENT} > ${MARKER}"
+              return 1
+            fi
+            return 0  # 有变化，需要重建
+          }
+
+          mark_built() {
+            local DIR=$1
+            local CURRENT
+            CURRENT=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+              "cd ${DEPLOY_DIR} && git rev-parse HEAD" 2>/dev/null || echo "unknown")
+            ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "echo ${CURRENT} > /tmp/.docker-build-${DIR}.commit"
+          }
+
           build_image() {
             local NAME=$1
             local DIR=$2
             local LOG="/tmp/docker-build-${NAME}.log"
 
             echo "========================================="
-            echo "启动 ${NAME} 构建（后台运行）..."
+            echo "检查 ${NAME} (${DIR}) 是否需要构建..."
+
+            # 如果镜像已存在 且 源码未变化，跳过
+            local image_exists
+            image_exists=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+              "docker image inspect blog-${NAME}:latest > /dev/null 2>&1 && echo 'yes' || echo 'no'")
+
+            if [ "$image_exists" = "yes" ] && ! need_rebuild "${DIR}"; then
+              echo "✅ ${NAME} 无变化，使用缓存镜像"
+              return 0
+            fi
+
+            echo "🔨 需要重建 ${NAME}..."
             ssh_retry "nohup docker build -t blog-${NAME}:latest ${DEPLOY_DIR}/${DIR} > ${LOG} 2>&1 &"
 
             echo "等待 ${NAME} 构建完成..."
             local prev_size=0
             for i in $(seq 1 120); do
               sleep 15
-              # 一次 SSH 连接同时检查进程 + 看日志进度
               local result
               result=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
                 "pgrep -f 'docker build.*blog-${NAME}' > /dev/null 2>&1 && echo 'BUILDING' || echo 'DONE'; wc -l < ${LOG} 2>/dev/null || echo 0" 2>/dev/null || echo "SSH_FAIL")
@@ -206,23 +250,21 @@ jobs:
               fi
             done
 
-            # 一次性获取：构建日志最后部分 + 检查是否成功
             echo "--- ${NAME} 构建日志（最后40行） ---"
             local check_result
             check_result=$(ssh_retry "tail -40 ${LOG} 2>/dev/null; echo '---SPLIT---'; grep -q 'Successfully built' ${LOG} 2>/dev/null && echo 'BUILD_OK' || echo 'BUILD_FAIL'; docker image inspect blog-${NAME}:latest > /dev/null 2>&1 && echo 'IMAGE_OK' || echo 'IMAGE_MISSING'" || echo "SSH_FAILED")
 
-            # 显示日志部分
             echo "$check_result" | sed '/---SPLIT---/,$d' || echo "$check_result"
             echo "--- 日志结束 ---"
 
-            # 检查结果
             if echo "$check_result" | grep -q 'BUILD_OK'; then
               echo "✅ ${NAME} 构建成功！(log check: BUILD_OK)"
+              mark_built "${DIR}"
             elif echo "$check_result" | grep -q 'IMAGE_OK'; then
               echo "✅ ${NAME} 构建成功！(image exists)"
+              mark_built "${DIR}"
             else
               echo "❌ ${NAME} 构建失败！"
-              echo "完整日志:"
               ssh_retry "cat ${LOG}" || true
               exit 1
             fi
