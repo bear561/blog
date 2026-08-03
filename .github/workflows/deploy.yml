@@ -393,13 +393,57 @@ jobs:
 
       - name: Verify deployment
         env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SSH_KEY: ~/.ssh/github_actions
         run: |
           echo "验证部署状态..."
-          sleep 10
-          if curl -f http://${{ secrets.SERVER_HOST }} 2>/dev/null; then
-            echo "✅ 部署验证成功！"
+
+          # 等待服务启动（Spring Boot 可能需要较长时间）
+          echo "等待服务就绪..."
+          sleep 15
+
+          # 通过 SSH 在服务器本地验证，绕过防火墙
+          echo ""
+          echo "=== 容器状态 ==="
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" || true
+
+          echo ""
+          echo "=== 本地 HTTP 检测 ==="
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "
+            echo '1. 测试前端:'
+            curl -sS -o /dev/null -w '   HTTP %{http_code} (size: %{size_download} bytes)\n' http://localhost/ 2>&1 || echo '   ❌ 连接失败'
+
+            echo '2. 测试后台:'
+            curl -sS -o /dev/null -w '   HTTP %{http_code} (size: %{size_download} bytes)\n' http://localhost/admin/ 2>&1 || echo '   ❌ 连接失败'
+
+            echo '3. 测试 API:'
+            curl -sS -o /dev/null -w '   HTTP %{http_code}\n' http://localhost/api/ 2>&1 || echo '   ❌ 连接失败'
+          " || true
+
+          # 检查 nginx 错误日志
+          echo ""
+          echo "=== Nginx 最近错误 ==="
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "docker logs blog-nginx --tail 20 2>&1 || echo '无法获取 nginx 日志'" || true
+
+          # 检查服务器错误日志
+          echo ""
+          echo "=== Server 最近日志 ==="
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "docker logs blog-server --tail 10 2>&1 || echo '无法获取 server 日志'" || true
+
+          # 判断部署是否成功
+          echo ""
+          local_ok=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
+            "curl -sS -o /dev/null -w '%{http_code}' http://localhost/ 2>/dev/null || echo '000'")
+
+          if [ "$local_ok" = "200" ]; then
+            echo "✅ 部署验证成功！(localhost:80 → HTTP 200)"
+          elif [ "$local_ok" = "000" ]; then
+            echo "❌ nginx 未响应，可能容器启动失败"
+            exit 1
           else
-            echo "⚠️ 前端访问失败，但服务可能已启动"
+            echo "⚠️ nginx 返回 HTTP ${local_ok}，需进一步排查"
             exit 1
           fi
