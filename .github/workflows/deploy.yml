@@ -308,7 +308,31 @@ jobs:
             extract_dist "blog-admin:latest" "blog-admin/dist"
 
             echo "验证文件:"
-            ls -la blog-frontend/dist/index.html blog-admin/dist/index.html 2>/dev/null && echo "✅ dist 文件就绪" || echo "⚠️ index.html 缺失"
+            echo "=== blog-frontend/dist ==="
+            ls -la blog-frontend/dist/ 2>&1 || echo "目录不存在或为空"
+            echo ""
+            echo "=== blog-admin/dist ==="
+            ls -la blog-admin/dist/ 2>&1 || echo "目录不存在或为空"
+            echo ""
+            echo "=== Docker 镜像内文件（frontend） ==="
+            CID=$(docker create blog-frontend:latest 2>/dev/null)
+            if [ -n "$CID" ]; then
+              docker run --rm blog-frontend:latest ls -la /usr/share/nginx/html/ 2>&1 || true
+              docker rm "$CID" 2>/dev/null || true
+            fi
+            echo ""
+            echo "=== Docker 镜像内文件（admin） ==="
+            CID=$(docker create blog-admin:latest 2>/dev/null)
+            if [ -n "$CID" ]; then
+              docker run --rm blog-admin:latest ls -la /usr/share/nginx/html/ 2>&1 || true
+              docker rm "$CID" 2>/dev/null || true
+            fi
+
+            if ls blog-frontend/dist/index.html >/dev/null 2>&1 && ls blog-admin/dist/index.html >/dev/null 2>&1; then
+              echo "✅ dist 文件就绪"
+            else
+              echo "⚠️ index.html 缺失，详情见上方 ls 输出"
+            fi
 
             echo "✅ 静态文件提取完成"
           EXTRACT
