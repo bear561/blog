@@ -36,6 +36,9 @@ jobs:
           echo "========================================="
 
       - name: Setup SSH key
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           mkdir -p ~/.ssh ~/.ssh/controlmasters
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions
@@ -52,7 +55,18 @@ jobs:
               ControlPersist 10m
               ConnectionAttempts 3
           EOF
-          echo "SSH key 已配置"
+          echo "SSH key 已配置（runner）"
+
+          # 同时把 SSH key 同步到服务器，供服务器访问 GitHub 使用
+          echo "同步 SSH key 到服务器..."
+          ssh -i ~/.ssh/github_actions ${SERVER_USER}@${SERVER_HOST} \
+            "mkdir -p ~/.ssh && chmod 700 ~/.ssh" || true
+          scp -i ~/.ssh/github_actions ~/.ssh/github_actions ${SERVER_USER}@${SERVER_HOST}:~/.ssh/github_actions || true
+          ssh -i ~/.ssh/github_actions ${SERVER_USER}@${SERVER_HOST} \
+            "chmod 600 ~/.ssh/github_actions && \
+             grep -q 'Host github.com' ~/.ssh/config 2>/dev/null || \
+             printf 'Host github.com\n    IdentityFile ~/.ssh/github_actions\n    StrictHostKeyChecking no\n' >> ~/.ssh/config && \
+             echo '✅ 服务器 SSH key 配置完成'"
 
       - name: Test SSH connection
         run: |
@@ -122,9 +136,9 @@ jobs:
             echo "移除旧目录并从 GitHub clone..."
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
               "rm -rf ${DEPLOY_DIR} || true"
-            # 克隆项目（用 GitHub Token 走 HTTPS，避免服务器没配 SSH key）
+            # 克隆项目（SSH 方式，服务器已配置好 key）
             ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-              "git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git ${DEPLOY_DIR}"
+              "git clone git@github.com:${GITHUB_REPO}.git ${DEPLOY_DIR}"
           fi
 
           # 验证关键文件存在
