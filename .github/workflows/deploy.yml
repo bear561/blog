@@ -274,6 +274,42 @@ jobs:
           build_image "admin" "blog-admin"
           build_image "server" "blog-server"
 
+      - name: Extract static files from Docker images
+        env:
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          DEPLOY_DIR: /var/www/blog
+          SSH_KEY: ~/.ssh/github_actions
+        run: |
+          echo "从 Docker 镜像提取 dist 文件到宿主机..."
+          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} << 'EXTRACT'
+            cd /var/www/blog
+
+            extract_dist() {
+              local IMAGE=$1
+              local TARGET=$2
+              echo "提取 ${IMAGE} -> ${TARGET}..."
+              rm -rf "${TARGET}"
+              mkdir -p "${TARGET}"
+              local CID=$(docker create ${IMAGE} 2>/dev/null)
+              if [ -n "$CID" ]; then
+                docker cp "${CID}:/usr/share/nginx/html/." "${TARGET}/" && echo "  ✅ 提取成功"
+                docker rm "${CID}" > /dev/null
+              else
+                echo "  ❌ 无法创建临时容器"
+                return 1
+              fi
+            }
+
+            extract_dist "blog-frontend:latest" "${DEPLOY_DIR}/blog-frontend/dist"
+            extract_dist "blog-admin:latest" "${DEPLOY_DIR}/blog-admin/dist"
+
+            echo "验证文件:"
+            ls -la blog-frontend/dist/index.html blog-admin/dist/index.html 2>/dev/null && echo "✅ dist 文件就绪" || echo "⚠️ index.html 缺失"
+
+            echo "✅ 静态文件提取完成"
+          EXTRACT
+
       - name: Stop old containers
         env:
           SERVER_USER: ${{ secrets.SERVER_USER }}
