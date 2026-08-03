@@ -284,8 +284,12 @@ jobs:
           echo "停止并清理旧容器..."
           ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
             "cd ${DEPLOY_DIR} && \
-             docker-compose down --remove-orphans --timeout 30 && \
-             echo '✅ docker-compose down 完成'"
+             docker-compose down --remove-orphans --timeout 30 2>&1 || true; \
+             echo '---'; \
+             echo '强制清理所有 blog 相关容器...'; \
+             docker stop blog-redis blog-mysql blog-server blog-nginx 2>/dev/null || true; \
+             docker rm -f blog-redis blog-mysql blog-server blog-nginx 2>/dev/null || true; \
+             echo '✅ 清理完成'"
 
       - name: Start new containers
         env:
@@ -294,15 +298,6 @@ jobs:
           DEPLOY_DIR: /var/www/blog
           SSH_KEY: ~/.ssh/github_actions
         run: |
-          echo "确保端口未被占用..."
-          # 强制停掉任何占用 6379/3306 的容器（防止 docker-compose down 没清理干净的残留）
-          ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
-            "docker stop \$(docker ps -q --filter 'publish=6379') 2>/dev/null || true; \
-             docker stop \$(docker ps -q --filter 'publish=3306') 2>/dev/null || true; \
-             docker rm \$(docker ps -aq --filter 'publish=6379') 2>/dev/null || true; \
-             docker rm \$(docker ps -aq --filter 'publish=3306') 2>/dev/null || true; \
-             echo '✅ 端口检查完成'"
-
           echo "启动新容器..."
           ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} \
             "cd ${DEPLOY_DIR} && docker-compose up -d"
