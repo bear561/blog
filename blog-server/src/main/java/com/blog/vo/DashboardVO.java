@@ -2,8 +2,11 @@ package com.blog.vo;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class DashboardVO {
+public class DashboardVO implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private Long articleCount;
     private Long commentCount;
