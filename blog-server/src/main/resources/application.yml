@@ -1,6 +1,10 @@
 server:
   port: ${SERVER_PORT:8080}
 
+ai:
+  api-key: ${AI_API_KEY:}
+  model: ${AI_MODEL:deepseek-chat}
+
 spring:
   servlet:
     multipart:
