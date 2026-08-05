@@ -6,6 +6,8 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  // 管理端部署在 /admin/ 子路径下，静态资源必须带此前缀
+  base: '/admin/',
   plugins: [
     vue(),
     AutoImport({ resolvers: [ElementPlusResolver()] }),
