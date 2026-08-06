@@ -46,6 +46,7 @@ services:
     build:
       context: ./blog-server
       dockerfile: Dockerfile
+    image: blog-server:latest
     container_name: blog-server
     restart: always
     depends_on:
@@ -58,7 +59,9 @@ services:
       SPRING_DATASOURCE_USERNAME: blog
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-blog123}
       SPRING_DATA_REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET}
       AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
     volumes:
       - uploads-data:/app/uploads
     networks:
