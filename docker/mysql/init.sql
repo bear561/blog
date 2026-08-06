@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS t_ai_conversation (
 
 -- 插入默认管理员 (密码: admin123, BCrypt加密)
 INSERT INTO t_user (username, password, nickname) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '站长');
+('admin', '$2b$10$3X1b9btJpSpU5f4raczhsuDFP525yz.e30ND0jXDwO59bM2KYxwTS', '站长');
 
 -- 插入默认分类
 INSERT INTO t_category (name, slug, description, sort_order) VALUES

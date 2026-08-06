@@ -291,8 +291,10 @@ jobs:
               local IMAGE=$1
               local TARGET=$2
               echo "提取 ${IMAGE} -> ${TARGET}..."
-              rm -rf "${TARGET}"
+              # 只删目录内容，不删目录本身（目录被 nginx bind mount，
+              # rm -rf 重建目录会导致容器内挂载失效返回 403）
               mkdir -p "${TARGET}"
+              find "${TARGET}" -mindepth 1 -delete
               local CID=$(docker create ${IMAGE} 2>/dev/null)
               if [ -n "$CID" ]; then
                 docker cp "${CID}:/usr/share/nginx/html/." "${TARGET}/" && echo "  ✅ 提取成功"
