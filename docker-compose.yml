@@ -74,11 +74,14 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./blog-frontend/dist:/usr/share/nginx/html/frontend
       - ./blog-admin/dist:/usr/share/nginx/html/admin
       - uploads-data:/usr/share/nginx/html/uploads
+      - /etc/blog-ssl:/etc/blog-ssl:ro
+      - /var/www/acme:/var/www/acme
     depends_on:
       - server
     networks:
