@@ -18,11 +18,6 @@
       <!-- 博客统计 -->
       <div class="side-widget stats-widget">
         <div class="stat-row">
-          <span class="stat-icon">☀️</span>
-          <span class="stat-label">运行</span>
-          <span class="stat-value">{{ runningDays }} 天</span>
-        </div>
-        <div class="stat-row">
           <span class="stat-icon">✍️</span>
           <span class="stat-label">文章</span>
           <span class="stat-value">{{ articleTotal }} 篇</span>
@@ -31,6 +26,11 @@
           <span class="stat-icon">📁</span>
           <span class="stat-label">分类</span>
           <span class="stat-value">{{ categoryTotal }} 个</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🏷️</span>
+          <span class="stat-label">标签</span>
+          <span class="stat-value">{{ tagTotal }} 个</span>
         </div>
       </div>
 
@@ -70,11 +70,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { UserFilled } from '@element-plus/icons-vue'
 import { getSiteConfig } from '@/api/siteConfig'
 import { getArticles } from '@/api/article'
 import { getCategories } from '@/api/category'
+import { getTags } from '@/api/tag'
 import { marked } from 'marked'
 import ArticleContent from '@/components/ArticleContent.vue'
 import AnalogClock from '@/components/AnalogClock.vue'
@@ -83,6 +84,7 @@ const aboutHtml = ref('')
 const loading = ref(false)
 const articleTotal = ref(0)
 const categoryTotal = ref(0)
+const tagTotal = ref(0)
 const config = reactive({ site_name: '', site_description: '' })
 
 // 社交链接 — 改成你自己的链接
@@ -93,23 +95,21 @@ const social = reactive({
   juejin: 'https://juejin.cn'
 })
 
-// 运行天数，基于博客起始日（可手动调整）
-const BLOG_START = new Date('2023-01-01')
-const runningDays = computed(() => Math.floor((Date.now() - BLOG_START.getTime()) / 86400000))
-
 onMounted(async () => {
   loading.value = true
   try {
-    const [configRes, articlesRes, categoriesRes] = await Promise.all([
+    const [configRes, articlesRes, categoriesRes, tagsRes] = await Promise.all([
       getSiteConfig(),
       getArticles({ page: 1, pageSize: 1 }),
-      getCategories()
+      getCategories(),
+      getTags()
     ])
     const c = configRes.data || {}
     Object.assign(config, c)
     aboutHtml.value = marked(c.about_content || '')
     articleTotal.value = articlesRes.data?.total || 0
     categoryTotal.value = (categoriesRes.data || []).length
+    tagTotal.value = (tagsRes.data || []).length
 
     // 从站点配置读取社交链接（如果后端有配置的话）
     if (c.social_github) social.github = c.social_github

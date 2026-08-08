@@ -12,4 +12,6 @@ WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 RUN mkdir -p /app/uploads
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# 固定 JVM 时区为上海，避免 createdAt 等 LocalDateTime 与 JDBC serverTimezone=Asia/Shanghai 不一致导致 8 小时偏差
+ENV TZ=Asia/Shanghai
+ENTRYPOINT ["java", "-Duser.timezone=Asia/Shanghai", "-jar", "app.jar"]

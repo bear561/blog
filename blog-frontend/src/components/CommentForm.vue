@@ -85,6 +85,7 @@ async function handleSubmit() {
       }
       if (props.replyTo) {
         data.parentId = props.replyTo.id
+        data.replyToId = props.replyTo.id
       }
       await postComment(data)
       ElMessage.success('评论成功')

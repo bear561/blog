@@ -1,11 +1,14 @@
 package com.blog.controller;
 
 import com.blog.dto.AIChatRequest;
+import com.blog.entity.AiConversation;
+import com.blog.mapper.AiConversationMapper;
 import com.blog.service.ai.ArticleContextBuilder;
 import com.blog.service.ai.BlogAiAssistant;
 import dev.langchain4j.service.TokenStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -21,6 +24,10 @@ public class AIChatController {
 
     private final BlogAiAssistant assistant;
     private final ArticleContextBuilder contextBuilder;
+    private final AiConversationMapper aiConversationMapper;
+
+    @Value("${ai.model}")
+    private String aiModel;
 
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter chat(@RequestBody AIChatRequest request) {
@@ -47,8 +54,11 @@ public class AIChatController {
         // @MemoryId 自动管理对话历史
         TokenStream tokenStream = assistant.chat(sessionId, enrichedMessage);
 
+        StringBuilder answer = new StringBuilder();
+
         tokenStream
                 .onPartialResponse(chunk -> {
+                    answer.append(chunk);
                     try {
                         emitter.send(SseEmitter.event()
                                 .name("message")
@@ -58,6 +68,20 @@ public class AIChatController {
                     }
                 })
                 .onCompleteResponse(response -> {
+                    // 持久化本轮对话记录
+                    try {
+                        AiConversation record = new AiConversation();
+                        record.setSessionId(sessionId);
+                        record.setQuestion(request.getQuestion());
+                        record.setAnswer(answer.toString());
+                        record.setModel(aiModel);
+                        if (response.tokenUsage() != null) {
+                            record.setTokensUsed(response.tokenUsage().totalTokenCount());
+                        }
+                        aiConversationMapper.insert(record);
+                    } catch (Exception e) {
+                        log.error("AI conversation persist failed for session {}", sessionId, e);
+                    }
                     try {
                         emitter.send(SseEmitter.event()
                                 .name("done")
