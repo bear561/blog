@@ -142,14 +142,19 @@ watch(renderedHtml, highlightCodeBlocks, { immediate: true, flush: 'post' })
 }
 .article-content :deep(li) { margin-bottom: 8px; }
 
-/* ===== 表格 ===== */
+/* ===== 表格 =====
+   列压缩自适应：表格始终占满容器宽度，列自动分配；
+   单元格内容过长时强制换行，保证任何屏宽都不超出屏幕、无需横向滑动 */
 .article-content :deep(table) {
   width: 100%; margin: 20px 0; border-collapse: collapse;
+  table-layout: auto;
   font-size: 14px; font-family: var(--font-sans);
 }
 .article-content :deep(th),
 .article-content :deep(td) {
   padding: 10px 16px; border: 1px solid var(--border); text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 .article-content :deep(th) { background: var(--bg-warm); font-weight: 600; }
 

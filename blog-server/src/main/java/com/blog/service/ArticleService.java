@@ -19,6 +19,7 @@ import com.blog.vo.TagVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataSet;
@@ -48,6 +49,8 @@ public class ArticleService {
 
     static {
         MutableDataSet options = new MutableDataSet();
+        // 启用 GFM 表格扩展，否则 markdown 表格（| a | b |）不会被解析成 <table>
+        options.set(Parser.EXTENSIONS, java.util.Arrays.asList(TablesExtension.create()));
         MD_PARSER = Parser.builder(options).build();
         HTML_RENDERER = HtmlRenderer.builder(options).build();
     }
