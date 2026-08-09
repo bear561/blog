@@ -81,6 +81,7 @@ services:
       - ./blog-admin/dist:/usr/share/nginx/html/admin
       - uploads-data:/usr/share/nginx/html/uploads
       - /etc/blog-ssl:/etc/blog-ssl:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - /var/www/acme:/var/www/acme
     depends_on:
       - server
