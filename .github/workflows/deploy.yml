@@ -418,8 +418,9 @@ jobs:
 
             # 一次 SSH 完成所有检测
             RESULT=$(ssh -i ${SSH_KEY} ${SERVER_USER}@${SERVER_HOST} "
-              FE=\$(curl -sS -o /dev/null -w '%{http_code}' http://localhost/ 2>/dev/null || echo '000')
-              AD=\$(curl -sS -o /dev/null -w '%{http_code}' http://localhost/admin/ 2>/dev/null || echo '000')
+              # nginx 把 HTTP 全部 301 到 HTTPS，验证必须走 HTTPS 并忽略本地证书校验
+              FE=\$(curl -sk -o /dev/null -w '%{http_code}' https://localhost/ 2>/dev/null || echo '000')
+              AD=\$(curl -sk -o /dev/null -w '%{http_code}' https://localhost/admin/ 2>/dev/null || echo '000')
               echo \"frontend=\${FE} admin=\${AD}\"
             " 2>/dev/null || echo "frontend=SSH_FAIL admin=SSH_FAIL")
 
