@@ -21,12 +21,15 @@ public class AiConfig {
     @Value("${ai.model}")
     private String modelName;
 
+    @Value("${ai.base-url}")
+    private String baseUrl;
+
     @Bean
     OpenAiStreamingChatModel streamingChatModel() {
         return OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .modelName(modelName)
-                .baseUrl("https://api.deepseek.com/v1")
+                .baseUrl(baseUrl)
                 .maxTokens(2000)
                 .temperature(0.7)
                 .timeout(Duration.ofSeconds(60))

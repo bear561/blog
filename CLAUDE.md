@@ -86,13 +86,15 @@ config/           SecurityConfig (JWT filter), RedisConfig, CorsConfig, MyBatisP
 5. Provider configured via `app.ai.provider` in application.yml; `@ConditionalOnProperty` selects implementation
 
 ### Redis Cache Keys
+> 普通缓存 TTL 统一为 30min（见 RedisConfig.cacheManager 的 entryTtl），差异 TTL 仅限 rate 限流键。
 | Pattern | TTL | Invalidated by |
 |---|---|---|
-| `article:list:*` | 10min | Article create/update/delete |
-| `article:detail:{id}` | 30min | Article update |
-| `article:hot` | 1h | Scheduled refresh |
-| `category:all` | 1h | Category CRUD |
-| `tag:all` | 1h | Tag CRUD |
+| `article:list:{query}` | 30min | Admin article create/update/delete/publish |
+| `article:detail:{id}` | 30min | Admin article update/delete/publish |
+| `article:hot:{limit}` | 30min | Admin article create/update/delete/publish |
+| `article:archive` | 30min | Admin article create/update/delete/publish |
+| `category:all` | 30min | Category CRUD |
+| `tag:all` | 30min | Tag CRUD |
 | `friend:links` | 30min | Link CRUD |
 | `site:config` | 30min | Config update |
 | `rate:comment:{ip}` | 1min window | Automatic expiry |

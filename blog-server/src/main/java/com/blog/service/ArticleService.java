@@ -2,7 +2,6 @@ package com.blog.service;
 
 import com.blog.common.BusinessException;
 import com.blog.common.PageResult;
-import com.blog.dto.ArticleDTO;
 import com.blog.dto.ArticleQueryDTO;
 import com.blog.entity.Article;
 import com.blog.entity.ArticleTag;
@@ -24,13 +23,10 @@ import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,12 +40,11 @@ public class ArticleService {
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
 
-    private static final Parser MD_PARSER;
-    private static final HtmlRenderer HTML_RENDERER;
+    static final Parser MD_PARSER;
+    static final HtmlRenderer HTML_RENDERER;
 
     static {
         MutableDataSet options = new MutableDataSet();
-        // 启用 GFM 表格扩展，否则 markdown 表格（| a | b |）不会被解析成 <table>
         options.set(Parser.EXTENSIONS, java.util.Arrays.asList(TablesExtension.create()));
         MD_PARSER = Parser.builder(options).build();
         HTML_RENDERER = HtmlRenderer.builder(options).build();
@@ -57,13 +52,12 @@ public class ArticleService {
 
     // ===== 公开接口 =====
 
+    @Cacheable(value = "article:list", key = "#query")
     public PageResult<ArticleListVO> getArticleList(ArticleQueryDTO query) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
                 .eq(Article::getIsPublished, 1)
-                .orderByDesc(Article::getIsTop); // 置顶永远优先
+                .orderByDesc(Article::getIsTop);
 
-        // 次级排序：支持按 时间 / 阅读数 的 升/降序（默认时间倒序）。
-        // sortBy 走白名单（仅 viewCount 否则 createdAt），用方法引用，无注入风险。
         boolean isAsc = "asc".equalsIgnoreCase(query.getOrder());
         if ("viewCount".equalsIgnoreCase(query.getSortBy())) {
             wrapper.orderBy(true, isAsc, Article::getViewCount);
@@ -71,8 +65,6 @@ public class ArticleService {
             wrapper.orderBy(true, isAsc, Article::getCreatedAt);
         }
 
-        // 分类过滤：优先用 id；否则按 slug 解析（slug 查不到回退 name）。
-        // 显式传了 slug 却解析不到 → 用 -1 哨兵，使结果为空（而非返回全部）。
         Long categoryId = query.getCategoryId();
         if (categoryId == null && StringUtils.hasText(query.getCategorySlug())) {
             Category cat = categoryMapper.selectOne(new LambdaQueryWrapper<Category>()
@@ -87,7 +79,6 @@ public class ArticleService {
             wrapper.eq(Article::getCategoryId, categoryId);
         }
 
-        // 标签过滤：优先用 id；否则按 slug 解析（slug 查不到回退 name）；查不到 → 空结果。
         Long tagId = query.getTagId();
         if (tagId == null && StringUtils.hasText(query.getTagSlug())) {
             Tag tag = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
@@ -119,19 +110,31 @@ public class ArticleService {
         return PageResult.of(records, result.getTotal(), query.getPage(), query.getSize());
     }
 
+    // 详情缓存 30 分钟；浏览量由 incrementViewCount 原子自增（在缓存外），两者互不干扰。
+    // 发布状态校验由调用方先执行 checkPublished，这里不做重复校验。
     @Cacheable(value = "article:detail", key = "#id")
     public ArticleVO getArticleDetail(Long id) {
+        Article article = articleMapper.selectById(id);
+        if (article == null) {
+            throw new BusinessException(404, "文章不存在");
+        }
+        return toArticleVO(article);
+    }
+
+    // 仅校验文章是否已发布（未发布抛 404），供浏览量计数前拦截草稿
+    public void checkPublished(Long id) {
         Article article = articleMapper.selectById(id);
         if (article == null || article.getIsPublished() == 0) {
             throw new BusinessException(404, "文章不存在");
         }
-        // 异步增加浏览量 (简化: 同步)
-        article.setViewCount(article.getViewCount() + 1);
-        articleMapper.updateById(article);
-
-        return toArticleVO(article);
     }
 
+    // 原子自增浏览量，与详情读取解耦
+    public void incrementViewCount(Long id) {
+        articleMapper.incrementViewCount(id);
+    }
+
+    @Cacheable(value = "article:archive")
     public List<ArchiveVO> getArchive() {
         List<Article> articles = articleMapper.selectList(
                 new LambdaQueryWrapper<Article>()
@@ -158,6 +161,7 @@ public class ArticleService {
         }).collect(Collectors.toList());
     }
 
+    @Cacheable(value = "article:hot", key = "#limit")
     public List<ArticleListVO> getHotArticles(int limit) {
         return articleMapper.selectList(
                 new LambdaQueryWrapper<Article>()
@@ -168,7 +172,6 @@ public class ArticleService {
     }
 
     public PageResult<ArticleListVO> search(String keyword, int page, int size) {
-        // 使用 LIKE 搜索
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
                 .eq(Article::getIsPublished, 1)
                 .and(w -> w.like(Article::getTitle, keyword)
@@ -186,102 +189,9 @@ public class ArticleService {
         return PageResult.of(records, result.getTotal(), page, size);
     }
 
-    // ===== 管理接口 =====
+    // ===== 包级共享方法（供 AdminArticleService 调用） =====
 
-    public PageResult<ArticleListVO> adminGetArticles(int page, int size, Integer isPublished) {
-        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<Article>()
-                .orderByDesc(Article::getCreatedAt);
-        if (isPublished != null) {
-            wrapper.eq(Article::getIsPublished, isPublished);
-        }
-
-        Page<Article> p = new Page<>(page, size);
-        IPage<Article> result = articleMapper.selectPage(p, wrapper);
-
-        List<ArticleListVO> records = result.getRecords().stream()
-                .map(this::toAdminArticleListVO)
-                .collect(Collectors.toList());
-
-        return PageResult.of(records, result.getTotal(), page, size);
-    }
-
-    @Transactional
-    @CacheEvict(value = {"article:list", "article:hot", "article:archive"}, allEntries = true)
-    public ArticleVO createArticle(ArticleDTO dto) {
-        Article article = new Article();
-        article.setTitle(dto.getTitle());
-        article.setSummary(dto.getSummary());
-        article.setContent(dto.getContent());
-        article.setContentHtml(MD_PARSER.parse(dto.getContent()) != null
-                ? HTML_RENDERER.render(MD_PARSER.parse(dto.getContent())) : "");
-        article.setCoverImage(dto.getCoverImage());
-        article.setCategoryId(dto.getCategoryId());
-        article.setIsPublished(dto.getIsPublished() != null ? dto.getIsPublished() : 0);
-        article.setIsTop(dto.getIsTop() != null ? dto.getIsTop() : 0);
-        article.setViewCount(0L);
-        articleMapper.insert(article);
-
-        saveArticleTags(article.getId(), dto.getTagIds());
-
-        return toArticleVO(article);
-    }
-
-    @Transactional
-    @CacheEvict(value = {"article:list", "article:hot", "article:archive", "article:detail"}, allEntries = true)
-    public ArticleVO updateArticle(Long id, ArticleDTO dto) {
-        Article article = articleMapper.selectById(id);
-        if (article == null) {
-            throw new BusinessException(404, "文章不存在");
-        }
-
-        article.setTitle(dto.getTitle());
-        article.setSummary(dto.getSummary());
-        article.setContent(dto.getContent());
-        article.setContentHtml(MD_PARSER.parse(dto.getContent()) != null
-                ? HTML_RENDERER.render(MD_PARSER.parse(dto.getContent())) : "");
-        article.setCoverImage(dto.getCoverImage());
-        article.setCategoryId(dto.getCategoryId());
-        article.setIsPublished(dto.getIsPublished());
-        article.setIsTop(dto.getIsTop() != null ? dto.getIsTop() : 0);
-        articleMapper.updateById(article);
-
-        // 更新标签
-        articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, id));
-        saveArticleTags(id, dto.getTagIds());
-
-        return toArticleVO(article);
-    }
-
-    @CacheEvict(value = {"article:list", "article:hot", "article:archive", "article:detail"}, allEntries = true)
-    public void deleteArticle(Long id) {
-        articleMapper.deleteById(id);
-        articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, id));
-    }
-
-    @CacheEvict(value = {"article:list", "article:hot", "article:archive", "article:detail"}, allEntries = true)
-    public void publishArticle(Long id, boolean publish) {
-        Article article = articleMapper.selectById(id);
-        if (article == null) {
-            throw new BusinessException(404, "文章不存在");
-        }
-        article.setIsPublished(publish ? 1 : 0);
-        articleMapper.updateById(article);
-    }
-
-    // ===== 私有方法 =====
-
-    private void saveArticleTags(Long articleId, List<Long> tagIds) {
-        if (tagIds != null && !tagIds.isEmpty()) {
-            for (Long tagId : tagIds) {
-                ArticleTag at = new ArticleTag();
-                at.setArticleId(articleId);
-                at.setTagId(tagId);
-                articleTagMapper.insert(at);
-            }
-        }
-    }
-
-    private ArticleVO toArticleVO(Article article) {
+    ArticleVO toArticleVO(Article article) {
         ArticleVO vo = new ArticleVO();
         vo.setId(article.getId());
         vo.setTitle(article.getTitle());
@@ -304,7 +214,26 @@ public class ArticleService {
         return vo;
     }
 
-    private ArticleListVO toArticleListVO(Article article) {
+    void saveArticleTags(Long articleId, List<Long> tagIds) {
+        if (tagIds != null && !tagIds.isEmpty()) {
+            for (Long tagId : tagIds) {
+                ArticleTag at = new ArticleTag();
+                at.setArticleId(articleId);
+                at.setTagId(tagId);
+                articleTagMapper.insert(at);
+            }
+        }
+    }
+
+    String renderMarkdown(String content) {
+        if (content == null) return "";
+        return HTML_RENDERER.render(MD_PARSER.parse(content));
+    }
+
+    // ===== 私有方法 =====
+
+    // 供 AdminArticleService 构建后台列表复用（含 categoryName/tags）
+    ArticleListVO toArticleListVO(Article article) {
         ArticleListVO vo = new ArticleListVO();
         vo.setId(article.getId());
         vo.setTitle(article.getTitle());
@@ -321,13 +250,7 @@ public class ArticleService {
             }
         }
 
-        vo.setTags(getArticleTagVOs(article.getId()));
-        return vo;
-    }
-
-    private ArticleListVO toAdminArticleListVO(Article article) {
-        ArticleListVO vo = toArticleListVO(article);
-        vo.setIsPublished(article.getIsPublished());
+        vo.setTags(getArticleTags(article.getId()));
         return vo;
     }
 
@@ -346,9 +269,5 @@ public class ArticleService {
             }
             return vo;
         }).collect(Collectors.toList());
-    }
-
-    private List<TagVO> getArticleTagVOs(Long articleId) {
-        return getArticleTags(articleId);
     }
 }

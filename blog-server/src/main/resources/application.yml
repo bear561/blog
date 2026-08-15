@@ -4,6 +4,7 @@ server:
 ai:
   api-key: ${AI_API_KEY:}
   model: ${AI_MODEL:deepseek-chat}
+  base-url: ${AI_BASE_URL:https://api.deepseek.com/v1}
 
 spring:
   servlet:
@@ -12,7 +13,6 @@ spring:
       max-request-size: 10MB
 
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.blog.entity
   configuration:
     map-underscore-to-camel-case: true

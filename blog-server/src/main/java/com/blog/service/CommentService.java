@@ -10,27 +10,22 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CommentService {
 
     private final CommentMapper commentMapper;
-
-    @Autowired(required = false)
-    private RedisTemplate<String, Object> redisTemplate;
-
-    public CommentService(CommentMapper commentMapper) {
-        this.commentMapper = commentMapper;
-    }
+    private final ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -50,6 +45,7 @@ public class CommentService {
         String ip = getClientIp(request);
 
         // 限流检查（Redis 不可用时跳过）
+        RedisTemplate<String, Object> redisTemplate = redisTemplateProvider.getIfAvailable();
         if (redisTemplate != null) {
             try {
                 String rateKey = "rate:comment:" + ip;
