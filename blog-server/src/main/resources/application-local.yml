@@ -40,3 +40,4 @@ app:
 ai:
   api-key: sk-cc680ce7b0194886bd91faf6076bd50f
   model: deepseek-v4-flash
+  base-url: https://api.deepseek.com/v1

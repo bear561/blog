@@ -54,6 +54,9 @@ public class ArticleController {
 
     @GetMapping("/{id}")
     public Result<ArticleVO> getArticle(@PathVariable Long id) {
+        // ① 校验已发布（草稿在此抛 404，不计数）→ ② 原子自增 → ③ 再取详情（返回最新浏览量）
+        articleService.checkPublished(id);
+        articleService.incrementViewCount(id);
         return Result.success(articleService.getArticleDetail(id));
     }
 

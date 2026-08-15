@@ -14,6 +14,10 @@ node_modules/
 dist/
 .vite/
 
+# Playwright E2E 运行产物
+test-results/
+playwright-report/
+
 # Uploads
 uploads/
 
