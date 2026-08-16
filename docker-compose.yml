@@ -28,16 +28,24 @@ services:
     image: redis:7-alpine
     container_name: blog-redis
     restart: always
+    # 6379 对外开放（用户确认）。安全基线：必须保留 requirepass 密码，
+    # 并配合腾讯云安全组：入站仅放行你的 IP（勿用 0.0.0.0/0）
     ports:
       - "6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis-data:/data
       - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
-    command: redis-server /usr/local/etc/redis/redis.conf
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+      - --requirepass
+      - ${REDIS_PASSWORD}
     networks:
       - blog-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", 'redis-cli -a "$$REDIS_PASSWORD" --no-auth-warning ping | grep -q PONG']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -59,6 +67,7 @@ services:
       SPRING_DATASOURCE_USERNAME: blog
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-blog123}
       SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-deepseek-chat}
