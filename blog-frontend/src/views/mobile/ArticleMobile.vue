@@ -52,7 +52,7 @@ import { useRoute } from 'vue-router'
 import { getArticle } from '@/api/article'
 import { getComments } from '@/api/comment'
 import { formatDate } from '@/utils/date'
-import { readingTime } from '@/utils/readingTime'
+import { readingMinutesFrom } from '@/utils/readingTime'
 import { extractHeadings } from '@/utils/toc'
 import { Memo } from '@element-plus/icons-vue'
 import MobileAppBar from '@/components/mobile/MobileAppBar.vue'
@@ -67,7 +67,7 @@ const loading = ref(true)
 const replyTarget = ref(null)
 const articleRef = ref(null)
 const drawerOpen = ref(false)
-const readMin = computed(() => readingTime(article.value.contentHtml || ''))
+const readMin = computed(() => readingMinutesFrom(article.value))
 const tocHeadings = computed(() => extractHeadings(article.value.contentHtml || ''))
 
 function tocJump(i) {

@@ -8,6 +8,9 @@
         <router-link to="/about">关于</router-link>
       </div>
       <p class="copyright">&copy; {{ currentYear }} {{ appStore.siteName }}</p>
+      <p v-if="appStore.icpNumber" class="icp">
+        <IcpLink />
+      </p>
     </div>
   </footer>
 </template>
@@ -15,6 +18,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAppStore } from '@/stores/app'
+import IcpLink from '@/components/IcpLink.vue'
 const appStore = useAppStore()
 const currentYear = computed(() => new Date().getFullYear())
 </script>
@@ -30,4 +34,5 @@ const currentYear = computed(() => new Date().getFullYear())
 .footer-links a { font-size: 13px; color: var(--text-secondary); transition: color .2s; }
 .footer-links a:hover { color: var(--primary); }
 .copyright { font-size: 12px; color: var(--text-muted); margin: 0; }
+.icp { font-size: 12px; color: var(--text-muted); margin: 6px 0 0; }
 </style>

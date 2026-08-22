@@ -10,6 +10,7 @@ export const useAppStore = defineStore('app', () => {
   const siteDescription = computed(() => siteConfig.value.site_description || siteConfig.value.siteDescription || '')
   const aboutContent = computed(() => siteConfig.value.about || '')
   const avatar = computed(() => siteConfig.value.site_avatar || '')
+  const icpNumber = computed(() => siteConfig.value.icp_number || siteConfig.value.icpNumber || '')
 
   async function loadSiteConfig() {
     loading.value = true
@@ -30,6 +31,7 @@ export const useAppStore = defineStore('app', () => {
     siteDescription,
     aboutContent,
     avatar,
+    icpNumber,
     loadSiteConfig
   }
 })

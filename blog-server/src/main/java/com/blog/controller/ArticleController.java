@@ -22,6 +22,7 @@ public class ArticleController {
     public Result<?> getArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long tagId,
             @RequestParam(required = false) String categorySlug,
@@ -31,6 +32,9 @@ public class ArticleController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) Integer month) {
+
+        // 前端统一传 pageSize，后台 API 参数名为 size，这里做兼容（pageSize 优先）
+        if (pageSize != null) size = pageSize;
 
         ArticleQueryDTO query = new ArticleQueryDTO();
         query.setPage(page);
@@ -73,7 +77,9 @@ public class ArticleController {
     @GetMapping("/search")
     public Result<?> search(@RequestParam String keyword,
                             @RequestParam(defaultValue = "1") int page,
-                            @RequestParam(defaultValue = "10") int size) {
+                            @RequestParam(defaultValue = "10") int size,
+                            @RequestParam(required = false) Integer pageSize) {
+        if (pageSize != null) size = pageSize;
         return Result.success(articleService.search(keyword, page, size));
     }
 }

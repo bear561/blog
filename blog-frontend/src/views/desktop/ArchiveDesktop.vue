@@ -40,13 +40,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { getArchive } from '@/api/article'
 import { formatDate } from '@/utils/date'
-import { readingTime } from '@/utils/readingTime'
+import { readingMinutesFrom } from '@/utils/readingTime'
 
 const archiveList = ref([])
 const loading = ref(false)
 const totalArticles = computed(() => archiveList.value.reduce((sum, g) => sum + (g.articles?.length || 0), 0))
 
-function readMin(article) { return readingTime(article.contentHtml || article.summary || '') }
+function readMin(article) { return readingMinutesFrom(article) }
 
 onMounted(async () => {
   loading.value = true

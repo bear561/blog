@@ -14,3 +14,13 @@ export function readingTime(html) {
   const minutes = Math.max(1, Math.round(charCount / 350))
   return minutes
 }
+
+/**
+ * 优先使用后端下发的 readMinutes（列表/详情同一来源，保证数字一致），
+ * 接口未下发时（如旧缓存）回退到本地按字符估算。
+ */
+export function readingMinutesFrom(article) {
+  const a = article || {}
+  if (a.readMinutes) return a.readMinutes
+  return readingTime(a.contentHtml || a.summary || '')
+}

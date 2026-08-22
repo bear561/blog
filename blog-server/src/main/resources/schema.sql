@@ -106,5 +106,6 @@ MERGE INTO t_site_config (id, config_key, config_value, description) KEY(id) VAL
 (3, 'site_keywords', 'blog,技术,博客', 'SEO关键词'),
 (4, 'about_content', '# 关于我\n\n这是我的博客。', '关于页内容'),
 (5, 'footer_info', '© 2024 My Blog. Powered by Vue + Spring Boot.', '页脚信息'),
+(8, 'icp_number', '赣ICP备2026019609号', 'ICP备案号'),
 (6, 'ai_welcome_message', '你好！我是本站的AI助手，有什么可以帮你的？', 'AI欢迎语'),
 (7, 'ai_suggestions', '["最近发布了哪些文章？","介绍一下这个博客","有哪些技术分类的文章？","如何联系站长？"]', 'AI推荐问题');

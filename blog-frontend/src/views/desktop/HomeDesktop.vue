@@ -110,7 +110,7 @@ import { getCategories } from '@/api/category'
 import { getTags } from '@/api/tag'
 import { getSiteConfig } from '@/api/siteConfig'
 import { formatDate } from '@/utils/date'
-import { readingTime } from '@/utils/readingTime'
+import { readingMinutesFrom } from '@/utils/readingTime'
 import AnalogClock from '@/components/AnalogClock.vue'
 import DailyQuote from '@/components/DailyQuote.vue'
 
@@ -128,11 +128,11 @@ const siteAvatar = ref('')
 const heroArticle = computed(() => articles.value.length > 0 ? articles.value[0] : null)
 const heroReadMin = computed(() => {
   const a = heroArticle.value
-  return a ? readingTime(a.contentHtml || a.summary || '') : 0
+  return a ? readingMinutesFrom(a) : 0
 })
 const gridArticles = computed(() => articles.value.slice(1))
 
-function readMin(article) { return readingTime(article.contentHtml || article.summary || '') }
+function readMin(article) { return readingMinutesFrom(article) }
 
 onMounted(async () => {
   fetchArticles()

@@ -198,6 +198,7 @@ public class ArticleService {
         vo.setSummary(article.getSummary());
         vo.setContent(article.getContent());
         vo.setContentHtml(article.getContentHtml());
+        vo.setReadMinutes(estimateReadMinutes(article.getContentHtml()));
         vo.setCoverImage(article.getCoverImage());
         vo.setCategoryId(article.getCategoryId());
         vo.setIsTop(article.getIsTop());
@@ -230,6 +231,18 @@ public class ArticleService {
         return HTML_RENDERER.render(MD_PARSER.parse(content));
     }
 
+    /**
+     * 估算阅读分钟数：去除 HTML 标签后按中文字数估算，纯中文约 350 字/分钟，
+     * 最少 1 分钟。规则与前端 readingTime.js 保持一致，保证列表/详情同一来源。
+     */
+    public static int estimateReadMinutes(String html) {
+        if (html == null || html.isBlank()) {
+            return 1;
+        }
+        String text = html.replaceAll("<[^>]+>", "").replaceAll("\\s+", "");
+        return Math.max(1, (int) Math.round(text.length() / 350.0));
+    }
+
     // ===== 私有方法 =====
 
     // 供 AdminArticleService 构建后台列表复用（含 categoryName/tags）
@@ -241,6 +254,7 @@ public class ArticleService {
         vo.setCoverImage(article.getCoverImage());
         vo.setIsTop(article.getIsTop());
         vo.setViewCount(article.getViewCount());
+        vo.setReadMinutes(estimateReadMinutes(article.getContentHtml()));
         vo.setCreatedAt(article.getCreatedAt());
 
         if (article.getCategoryId() != null) {

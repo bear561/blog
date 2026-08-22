@@ -58,7 +58,7 @@ import { useRoute } from 'vue-router'
 import { getArticle } from '@/api/article'
 import { getComments } from '@/api/comment'
 import { formatDate } from '@/utils/date'
-import { readingTime } from '@/utils/readingTime'
+import { readingMinutesFrom } from '@/utils/readingTime'
 import { extractHeadings } from '@/utils/toc'
 import ArticleContent from '@/components/ArticleContent.vue'
 import ArticleToc from '@/components/ArticleToc.vue'
@@ -73,7 +73,7 @@ const replyTarget = ref(null)
 const articleRef = ref(null)
 const activeIndex = ref(-1)
 
-const readMin = computed(() => readingTime(article.value.contentHtml || ''))
+const readMin = computed(() => readingMinutesFrom(article.value))
 const headings = computed(() => extractHeadings(article.value.contentHtml || ''))
 
 // header 高度 + 间距，跳转和高亮判定都以此为准

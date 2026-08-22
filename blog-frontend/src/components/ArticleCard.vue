@@ -26,15 +26,11 @@
 <script setup>
 import { computed } from 'vue'
 import { formatDate } from '@/utils/date'
-import { readingTime } from '@/utils/readingTime'
+import { readingMinutesFrom } from '@/utils/readingTime'
 
 const props = defineProps({ article: { type: Object, required: true } })
 
-const readMin = computed(() => {
-  const a = props.article
-  const html = a.contentHtml || a.summary || ''
-  return readingTime(html)
-})
+const readMin = computed(() => readingMinutesFrom(props.article))
 </script>
 
 <style scoped>

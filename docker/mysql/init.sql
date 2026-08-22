@@ -126,5 +126,6 @@ INSERT INTO t_site_config (config_key, config_value, description) VALUES
 ('site_keywords', 'blog,技术,博客', 'SEO关键词'),
 ('about_content', '# 关于我\n\n这是我的博客。', '关于页内容'),
 ('footer_info', '© 2024 My Blog. Powered by Vue + Spring Boot.', '页脚信息'),
+('icp_number', '赣ICP备2026019609号', 'ICP备案号'),
 ('ai_welcome_message', '你好！我是本站的AI助手，我可以帮你：\n- 了解博客的内容\n- 查找特定主题的文章\n- 解答技术问题\n有什么可以帮你的？', 'AI欢迎语'),
 ('ai_suggestions', '["最近发布了哪些文章？","介绍一下这个博客","有哪些技术分类的文章？","如何联系站长？"]', 'AI推荐问题JSON数组');

@@ -55,6 +55,7 @@ public class AdminArticleService {
     }
 
     @Transactional
+    @CacheEvict(value = {"article:list", "article:hot", "article:archive"}, allEntries = true)
     public ArticleVO createArticle(ArticleDTO dto) {
         Article article = new Article();
         article.setTitle(dto.getTitle());
@@ -74,7 +75,7 @@ public class AdminArticleService {
     }
 
     @Transactional
-    @CacheEvict(value = "article:detail", allEntries = true)
+    @CacheEvict(value = {"article:detail", "article:list", "article:hot", "article:archive"}, allEntries = true)
     public ArticleVO updateArticle(Long id, ArticleDTO dto) {
         Article article = articleMapper.selectById(id);
         if (article == null) {
@@ -97,13 +98,14 @@ public class AdminArticleService {
         return articleService.toArticleVO(article);
     }
 
-    @CacheEvict(value = "article:detail", allEntries = true)
+    @Transactional
+    @CacheEvict(value = {"article:detail", "article:list", "article:hot", "article:archive"}, allEntries = true)
     public void deleteArticle(Long id) {
         articleMapper.deleteById(id);
         articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, id));
     }
 
-    @CacheEvict(value = "article:detail", allEntries = true)
+    @CacheEvict(value = {"article:detail", "article:list", "article:hot", "article:archive"}, allEntries = true)
     public void publishArticle(Long id, boolean publish) {
         Article article = articleMapper.selectById(id);
         if (article == null) {

@@ -20,6 +20,8 @@ public class ArticleListVO implements Serializable {
     private Integer isPublished;
     private Integer isTop;
     private Long viewCount;
+    /** 预计阅读分钟数，由服务端按 content_html 统一计算，保证列表与详情一致 */
+    private Integer readMinutes;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
