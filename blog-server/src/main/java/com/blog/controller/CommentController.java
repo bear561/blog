@@ -25,6 +25,6 @@ public class CommentController {
     @PostMapping
     public Result<?> submitComment(@RequestBody CommentDTO dto, HttpServletRequest request) {
         commentService.submitComment(dto, request);
-        return Result.success("评论提交成功，等待审核");
+        return Result.success("评论提交成功");
     }
 }

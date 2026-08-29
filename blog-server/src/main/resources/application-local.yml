@@ -1,26 +1,28 @@
 # ===========================================
-# 本地开发配置 (java -jar xxx.jar --spring.profiles.active=local)
-# 使用 H2 文件数据库，无需 Docker，开箱即用
+# 本地开发配置
+# 使用虚拟机里的 MySQL（无需 Docker / Redis）
+# 启动: mvn spring-boot:run -Dspring-boot.run.profiles=local
+# ===========================================
+# 占位符: 把 <...> 替换成你 VM 的实际值
+#   <VM_IP>          例如 192.168.1.100
+#   <MYSQL_USER>     例如 root
+#   <MYSQL_PASSWORD> 例如 root123
 # ===========================================
 
 spring:
   datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:file:./data/blog;MODE=MySQL;DATABASE_TO_LOWER=TRUE
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  sql:
-    init:
-      mode: always
-  cache:
-    type: none
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/blog?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: '@Xj051108'
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  cache:
+    type: none
+  sql:
+    init:
+      mode: never   # 表结构在 VM 上手动跑 docker/mysql/init.sql
 
 logging:
   level:

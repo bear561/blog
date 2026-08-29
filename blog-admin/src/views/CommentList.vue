@@ -12,7 +12,14 @@
               {{ row.articleTitle || row.article?.title || '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="nickname" label="Nickname" width="120" />
+          <el-table-column prop="nickname" label="Nickname" width="140">
+            <template #default="{ row }">
+              {{ row.nickname }}
+              <el-tag v-if="row.isAnonymous === 1" size="small" type="info" effect="plain" style="margin-left: 6px">
+                匿名
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="content" label="Comment" min-width="220" show-overflow-tooltip />
           <el-table-column label="Date" width="160" align="center">
             <template #default="{ row }">

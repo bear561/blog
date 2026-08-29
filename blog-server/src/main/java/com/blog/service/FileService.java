@@ -27,9 +27,9 @@ public class FileService {
             throw new BusinessException(400, "文件为空");
         }
 
-        // 限制文件大小 5MB
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new BusinessException(400, "文件大小不能超过5MB");
+        // 限制文件大小 10MB（与 application.yml 的 multipart.max-file-size 对齐）
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new BusinessException(400, "文件大小不能超过10MB");
         }
 
         // 获取文件扩展名

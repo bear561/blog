@@ -17,9 +17,9 @@ public class CommentVO implements Serializable {
     private Long replyToId;
     private String nickname;
     private String email;
-    private String website;
     private String content;
     private Integer isReviewed;
+    private Integer isAnonymous;
     private String createdAtFmt;
     private String formattedDate;
     private List<CommentVO> replies;

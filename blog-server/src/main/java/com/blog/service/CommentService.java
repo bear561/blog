@@ -65,11 +65,19 @@ public class CommentService {
         comment.setArticleId(dto.getArticleId());
         comment.setParentId(dto.getParentId());
         comment.setReplyToId(dto.getReplyToId());
-        comment.setNickname(dto.getNickname());
-        comment.setEmail(dto.getEmail());
-        comment.setWebsite(dto.getWebsite());
+
+        boolean anonymous = Boolean.TRUE.equals(dto.getIsAnonymous());
+        if (anonymous) {
+            comment.setNickname("Anonymous#" + randomHex4());
+            comment.setIsAnonymous(1);
+            comment.setEmail(null);
+        } else {
+            comment.setNickname(dto.getNickname());
+            comment.setIsAnonymous(0);
+            comment.setEmail(dto.getEmail());
+        }
         comment.setContent(dto.getContent());
-        comment.setIsReviewed(1); // 默认通过
+        comment.setIsReviewed(1); // 全部自动审核
         comment.setIp(ip);
         comment.setUserAgent(request.getHeader("User-Agent"));
 
@@ -144,11 +152,15 @@ public class CommentService {
         vo.setReplyToId(c.getReplyToId());
         vo.setNickname(c.getNickname());
         vo.setEmail(c.getEmail());
-        vo.setWebsite(c.getWebsite());
         vo.setContent(c.getContent());
         vo.setIsReviewed(c.getIsReviewed());
+        vo.setIsAnonymous(c.getIsAnonymous());
         vo.setCreatedAt(c.getCreatedAt());
         return vo;
+    }
+
+    private static String randomHex4() {
+        return String.format("%04x", new Random().nextInt(0x10000));
     }
 
     private String getClientIp(HttpServletRequest request) {

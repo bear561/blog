@@ -19,9 +19,9 @@ public class Comment implements Serializable {
     private Long replyToId;
     private String nickname;
     private String email;
-    private String website;
     private String content;
     private Integer isReviewed;
+    private Integer isAnonymous;
     private String ip;
     private String userAgent;
     private LocalDateTime createdAt;

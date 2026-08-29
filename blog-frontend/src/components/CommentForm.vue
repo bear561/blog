@@ -7,7 +7,11 @@
       </el-button>
     </h3>
     <el-form ref="formRef" :model="formData" :rules="rules" @submit.prevent="handleSubmit">
-      <el-row :gutter="16">
+      <el-form-item>
+        <el-checkbox v-model="formData.isAnonymous">匿名发表</el-checkbox>
+      </el-form-item>
+
+      <el-row :gutter="16" v-show="!formData.isAnonymous">
         <el-col :span="12">
           <el-form-item prop="nickname">
             <el-input v-model="formData.nickname" placeholder="昵称 *" size="large" />
@@ -15,13 +19,11 @@
         </el-col>
         <el-col :span="12">
           <el-form-item prop="email">
-            <el-input v-model="formData.email" placeholder="邮箱 *" size="large" />
+            <el-input v-model="formData.email" placeholder="邮箱 (选填)" size="large" />
           </el-form-item>
         </el-col>
       </el-row>
-      <el-form-item prop="website">
-        <el-input v-model="formData.website" placeholder="网站 (选填)" size="large" />
-      </el-form-item>
+
       <el-form-item prop="content">
         <el-input
           v-model="formData.content" type="textarea" :rows="4"
@@ -52,17 +54,31 @@ const formRef = ref(null)
 const submitting = ref(false)
 
 const formData = reactive({
-  nickname: '', email: '', website: '', content: ''
+  isAnonymous: false,
+  nickname: '', email: '', content: ''
 })
 
 const rules = {
   nickname: [
-    { required: true, message: '请输入昵称', trigger: 'blur' },
-    { max: 20, message: '昵称过长', trigger: 'blur' }
+    {
+      validator: (rule, value, cb) => {
+        if (formData.isAnonymous) return cb()
+        if (!value || !value.trim()) return cb(new Error('请输入昵称'))
+        if (value.length > 20) return cb(new Error('昵称过长'))
+        cb()
+      },
+      trigger: 'blur'
+    }
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
+    {
+      validator: (rule, value, cb) => {
+        if (!value) return cb()
+        const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+        ok ? cb() : cb(new Error('邮箱格式不正确'))
+      },
+      trigger: 'blur'
+    }
   ],
   content: [
     { required: true, message: '请输入评论内容', trigger: 'blur' },
@@ -78,10 +94,12 @@ async function handleSubmit() {
     try {
       const data = {
         articleId: props.articleId,
-        nickname: formData.nickname,
-        email: formData.email,
-        website: formData.website,
+        isAnonymous: formData.isAnonymous,
         content: formData.content
+      }
+      if (!formData.isAnonymous) {
+        data.nickname = formData.nickname
+        if (formData.email) data.email = formData.email
       }
       if (props.replyTo) {
         data.parentId = props.replyTo.id
@@ -89,7 +107,10 @@ async function handleSubmit() {
       }
       await postComment(data)
       ElMessage.success('评论成功')
-      formData.nickname = ''; formData.email = ''; formData.website = ''; formData.content = ''
+      formData.isAnonymous = false
+      formData.nickname = ''
+      formData.email = ''
+      formData.content = ''
       emit('submitted')
     } catch (e) {} finally { submitting.value = false }
   })

@@ -68,4 +68,32 @@ test.describe('博客文章页冒烟测试', () => {
     await page.screenshot({ path: 'test-results/comment-submitted.png' })
     expect(hasComment).toBeGreaterThan(0)
   })
+
+  test('评论: 匿名提交立即可见', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await page.goto(ARTICLE_URL)
+    await page.waitForSelector('.comment-form', { timeout: 15000 })
+
+    // 勾选匿名,昵称/邮箱行应折叠
+    await page.locator('.comment-form input[type="checkbox"]').check()
+    await expect(page.locator('input[placeholder*="昵称"]')).not.toBeVisible()
+
+    const anonContent = '匿名测试 ' + Date.now()
+    await page.fill('.comment-form textarea', anonContent)
+    await page.click('.comment-form button[type="submit"]')
+    await page.waitForTimeout(2500)
+
+    // 全部自动审核,应立即可见
+    const visible = await page.locator(`.comment-item:has-text("${anonContent}")`).count()
+    console.log('  ✅ 匿名评论可见数:', visible)
+    expect(visible).toBeGreaterThan(0)
+
+    // 昵称应形如 Anonymous#xxxx
+    const nick = await page
+      .locator(`.comment-item:has-text("${anonContent}") .comment-nickname`)
+      .first()
+      .textContent()
+    expect(nick).toMatch(/Anonymous#[0-9a-f]{4}/)
+    await page.screenshot({ path: 'test-results/comment-anonymous.png' })
+  })
 })
