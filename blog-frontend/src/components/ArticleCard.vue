@@ -1,10 +1,7 @@
 <template>
   <article class="article-card" @click="$router.push(`/article/${article.id}`)">
-    <div class="card-cover">
-      <img v-if="article.coverImage" :src="article.coverImage" alt="" loading="lazy" />
-      <div v-else class="cover-placeholder">
-        <el-icon :size="36"><Document /></el-icon>
-      </div>
+    <div class="card-cover" v-if="article.coverImage">
+      <img :src="article.coverImage" alt="" loading="lazy" />
     </div>
     <div class="card-body">
       <div class="card-meta">
@@ -28,7 +25,6 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Document } from '@element-plus/icons-vue'
 import { formatDate } from '@/utils/date'
 import { readingMinutesFrom } from '@/utils/readingTime'
 
@@ -51,19 +47,12 @@ const readMin = computed(() => readingMinutesFrom(props.article))
 .article-card:hover .card-title { color: var(--primary); }
 
 .card-cover {
-  width: 260px;
-  aspect-ratio: 16 / 9;
-  flex-shrink: 0;
+  width: 260px; height: 170px; flex-shrink: 0;
   overflow: hidden; background: var(--bg-warm);
 }
 .card-cover img {
   width: 100%; height: 100%; object-fit: cover;
   filter: sepia(0.06); transition: transform .4s;
-}
-.cover-placeholder {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-muted);
 }
 .article-card:hover .card-cover img { transform: scale(1.03); }
 

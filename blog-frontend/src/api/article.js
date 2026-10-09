@@ -12,8 +12,8 @@ export function getArchive() {
   return http.get('/articles/archive')
 }
 
-export function getHot(limit = 5) {
-  return http.get('/articles/hot', { params: { limit } })
+export function getHot() {
+  return http.get('/articles/hot')
 }
 
 export function searchArticles(keyword, extra = {}) {

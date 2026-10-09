@@ -44,37 +44,26 @@
 
       <!-- 主内容: 杂志排版 -->
       <main class="main-content" v-loading="loading">
-        <!-- Hero 轮播：前 3 篇特写 -->
-        <el-carousel
-          v-if="featuredArticles.length > 0"
-          :interval="5000"
-          arrow="hover"
-          trigger="click"
-          indicator-position="outside"
-          height="640px"
-          class="hero-carousel"
+        <!-- Hero 首篇 大图横跨 -->
+        <article
+          v-if="heroArticle"
+          class="card-hero"
+          @click="$router.push(`/article/${heroArticle.id}`)"
         >
-          <el-carousel-item v-for="art in featuredArticles" :key="art.id">
-            <article
-              class="card-hero"
-              @click="$router.push(`/article/${art.id}`)"
-            >
-              <div class="hero-cover">
-                <img v-if="art.coverImage" :src="art.coverImage" alt="" loading="lazy" />
-                <div v-else class="cover-placeholder"><el-icon :size="48"><Document /></el-icon></div>
-              </div>
-              <div class="hero-body">
-                <div class="card-meta">
-                  <span class="meta-cat" v-if="art.categoryName">{{ art.categoryName }}</span>
-                  <span class="meta-date">{{ formatDate(art.createdAt, 'YYYY-MM-DD') }}</span>
-                  <span class="meta-read">约 {{ readMin(art) }} 分钟</span>
-                </div>
-                <h2 class="hero-title">{{ art.title }}</h2>
-                <p class="hero-summary" v-if="art.summary">{{ art.summary }}</p>
-              </div>
-            </article>
-          </el-carousel-item>
-        </el-carousel>
+          <div class="hero-cover">
+            <img v-if="heroArticle.coverImage" :src="heroArticle.coverImage" alt="" loading="lazy" />
+            <div v-else class="cover-placeholder"><el-icon :size="40"><Document /></el-icon></div>
+          </div>
+          <div class="hero-body">
+            <div class="card-meta">
+              <span class="meta-cat" v-if="heroArticle.categoryName">{{ heroArticle.categoryName }}</span>
+              <span class="meta-date">{{ formatDate(heroArticle.createdAt, 'YYYY-MM-DD') }}</span>
+              <span class="meta-read">约 {{ heroReadMin }} 分钟</span>
+            </div>
+            <h2 class="hero-title">{{ heroArticle.title }}</h2>
+            <p class="hero-summary" v-if="heroArticle.summary">{{ heroArticle.summary }}</p>
+          </div>
+        </article>
 
         <!-- 后续文章: 两栏错落 -->
         <div class="card-grid" v-if="gridArticles.length > 0">
@@ -109,23 +98,6 @@
             layout="prev, pager, next" @current-change="handlePageChange" />
         </div>
       </main>
-
-      <!-- 右侧栏: 热门文章 -->
-      <aside class="rightbar">
-        <div class="side-card hot-card">
-          <h4>🔥 热门文章</h4>
-          <ol class="hot-list" v-if="hotArticles.length > 0">
-            <li v-for="(art, idx) in hotArticles" :key="art.id">
-              <span class="hot-rank" :class="`rank-${idx + 1}`">{{ idx + 1 }}</span>
-              <router-link :to="`/article/${art.id}`" class="hot-title" :title="art.title">
-                {{ art.title }}
-              </router-link>
-              <span class="hot-views">{{ art.viewCount || 0 }} 阅读</span>
-            </li>
-          </ol>
-          <p v-else class="empty-tip">暂无数据</p>
-        </div>
-      </aside>
     </div>
   </div>
 </template>
@@ -133,7 +105,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { UserFilled, Document } from '@element-plus/icons-vue'
-import { getArticles, getHot } from '@/api/article'
+import { getArticles } from '@/api/article'
 import { getCategories } from '@/api/category'
 import { getTags } from '@/api/tag'
 import { getSiteConfig } from '@/api/siteConfig'
@@ -145,7 +117,6 @@ import DailyQuote from '@/components/DailyQuote.vue'
 const articles = ref([])
 const categories = ref([])
 const tags = ref([])
-const hotArticles = ref([])
 const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(12)
@@ -154,8 +125,12 @@ const siteName = ref('')
 const siteDesc = ref('')
 const siteAvatar = ref('')
 
-const featuredArticles = computed(() => articles.value.slice(0, 3))
-const gridArticles = computed(() => articles.value.slice(3))
+const heroArticle = computed(() => articles.value.length > 0 ? articles.value[0] : null)
+const heroReadMin = computed(() => {
+  const a = heroArticle.value
+  return a ? readingMinutesFrom(a) : 0
+})
+const gridArticles = computed(() => articles.value.slice(1))
 
 function readMin(article) { return readingMinutesFrom(article) }
 
@@ -163,7 +138,6 @@ onMounted(async () => {
   fetchArticles()
   getCategories().then(r => categories.value = r.data || []).catch(() => {})
   getTags().then(r => tags.value = r.data || []).catch(() => {})
-  getHot(5).then(r => hotArticles.value = r.data || []).catch(() => {})
   getSiteConfig().then(r => { const c = r.data || {}; siteName.value = c.site_name || ''; siteDesc.value = c.site_description || ''; siteAvatar.value = c.site_avatar || '' }).catch(() => {})
 })
 
@@ -185,37 +159,6 @@ function handlePageChange(p) { page.value = p; fetchArticles(); window.scrollTo(
 
 /* 侧边栏 */
 .sidebar { width: 200px; flex-shrink: 0; }
-
-/* 右侧栏：热门文章 */
-.rightbar { width: 260px; flex-shrink: 0; }
-.hot-card h4 { display: flex; align-items: center; gap: 4px; }
-.hot-list { list-style: none; counter-reset: hot; }
-.hot-list li {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px dashed var(--border);
-}
-.hot-list li:last-child { border-bottom: none; }
-.hot-rank {
-  flex-shrink: 0;
-  width: 18px; height: 18px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700;
-  color: var(--text-muted);
-  background: var(--bg-warm);
-  border-radius: 3px;
-}
-.hot-rank.rank-1 { background: #e74c3c; color: #fff; }
-.hot-rank.rank-2 { background: #e67e22; color: #fff; }
-.hot-rank.rank-3 { background: #f1c40f; color: #fff; }
-.hot-title {
-  flex: 1; min-width: 0;
-  font-size: 13px; color: var(--text-secondary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  transition: color .15s;
-}
-.hot-title:hover { color: var(--primary); }
-.hot-views { flex-shrink: 0; font-size: 10px; color: var(--text-muted); }
 .author-card {
   display: flex; align-items: center; gap: 10px;
   padding: 16px; background: var(--bg-card); border: 1px solid var(--border);
@@ -241,32 +184,24 @@ function handlePageChange(p) { page.value = p; fetchArticles(); window.scrollTo(
 /* 主内容 */
 .main-content { flex: 1; min-width: 0; }
 
-/* Hero 轮播 */
-.hero-carousel { margin-bottom: 36px; }
-.hero-carousel :deep(.el-carousel__container) { background: transparent; }
-.hero-carousel :deep(.el-carousel__indicators--outside) { margin-top: 14px; }
-.hero-carousel :deep(.el-carousel__button) { width: 24px; height: 3px; background: var(--border); border-radius: 2px; }
-.hero-carousel :deep(.is-active .el-carousel__button) { background: var(--primary); }
+/* Hero 首篇 */
 .card-hero {
-  height: 100%; cursor: pointer;
+  margin-bottom: 28px; cursor: pointer;
   border: 1px solid var(--border);
   overflow: hidden; background: var(--bg-card);
   transition: border-color .2s;
-  display: flex; flex-direction: column;
 }
 .card-hero:hover { border-color: var(--primary-light); }
 .card-hero:hover .hero-title { color: var(--primary); }
 .hero-cover {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  overflow: hidden; background: var(--bg-warm);
-  flex-shrink: 0;
+  height: 300px; overflow: hidden; background: var(--bg-warm);
+  margin-bottom: 16px;
 }
 .hero-cover img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.06); transition: transform .5s; }
 .card-hero:hover .hero-cover img { transform: scale(1.02); }
 .cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
-.hero-body { padding: 22px 26px; display: flex; flex-direction: column; justify-content: center; flex: 1; min-height: 0; }
-.hero-title { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 10px; transition: color .2s; }
+.hero-body { padding: 16px 18px 18px; }
+.hero-title { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 8px; transition: color .2s; }
 .hero-summary { font-size: 14px; color: var(--text-secondary); line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* 两栏错落网格 */
@@ -286,18 +221,17 @@ function handlePageChange(p) { page.value = p; fetchArticles(); window.scrollTo(
 }
 .card:hover { border-color: var(--primary-light); }
 /* 右列卡片下沉，制造错落感 */
-.card:nth-child(even) { margin-top: 28px; }
+.card:nth-child(even) { margin-top: 36px; }
 .card:hover .card-title { color: var(--primary); }
 .card-cover {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  overflow: hidden; background: var(--bg-warm);
+  height: 180px; overflow: hidden; background: var(--bg-warm);
+  margin-bottom: 14px;
 }
 .card-cover img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.06); transition: transform .4s; }
 .card:hover .card-cover img { transform: scale(1.03); }
 .cover-placeholder-sm { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
 
-.card-body { padding: 14px 16px; display: flex; flex-direction: column; min-width: 0; }
+.card-body { padding: 0 16px 16px; flex: 1; display: flex; flex-direction: column; }
 .card-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .meta-cat {
   font-size: 11px; font-weight: 600; color: var(--primary);
@@ -305,9 +239,9 @@ function handlePageChange(p) { page.value = p; fetchArticles(); window.scrollTo(
 }
 .meta-date { font-size: 11px; color: var(--text-muted); }
 .meta-read { font-size: 10px; color: var(--text-muted); }
-.card-title { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 6px; transition: color .2s; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-title { font-size: 17px; font-weight: 700; color: var(--text); line-height: 1.4; margin-bottom: 6px; transition: color .2s; }
 .card-summary { font-size: 13px; color: var(--text-secondary); line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; }
-.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 4px; }
+.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 .footer-views { font-size: 11px; color: var(--text-muted); }
 .pagination-wrap { margin-top: 32px; display: flex; justify-content: center; }
 </style>
